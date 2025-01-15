@@ -9,7 +9,6 @@
       margin: 0;
       overflow: hidden;
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
       height: 100vh;
@@ -17,22 +16,26 @@
       font-family: Arial, sans-serif;
       color: white;
     }
+    .game-container {
+      display: flex;
+      align-items: flex-start;
+    }
     canvas {
       background-color: #222;
     }
     .info {
-      margin-top: 10px;
+      margin-left: 20px;
       text-align: center;
     }
     .controls {
-      display: flex;
-      justify-content: center;
-      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 20px;
     }
     .controls button {
       font-size: 20px;
-      padding: 10px 20px;
-      margin: 5px;
+      padding: 15px;
       background-color: #444;
       color: white;
       border: none;
@@ -48,21 +51,23 @@
   </style>
 </head>
 <body>
-  <canvas id="tetris" width="300" height="600"></canvas>
-  <div class="info">
-    <h2>Тетрис</h2>
-    <p>Очки: <span id="score">0</span></p>
-    <p id="pauseMessage" style="color: red; display: none;">Пауза</p>
-    <p id="eventMessage" style="color: yellow; display: none;"></p>
-    <div class="next-shape">
-      <p>Следующая фигура:</p>
-      <canvas id="nextShapeCanvas" width="120" height="120"></canvas>
+  <div class="game-container">
+    <canvas id="tetris" width="300" height="600"></canvas>
+    <div class="info">
+      <h2>Тетрис</h2>
+      <p>Очки: <span id="score">0</span></p>
+      <p id="pauseMessage" style="color: red; display: none;">Пауза</p>
+      <p id="eventMessage" style="color: yellow; display: none;"></p>
+      <div class="next-shape">
+        <p>Следующая фигура:</p>
+        <canvas id="nextShapeCanvas" width="120" height="120"></canvas>
+      </div>
     </div>
   </div>
   <div class="controls">
     <button id="left">←</button>
-    <button id="right">→</button>
     <button id="rotate">↑</button>
+    <button id="right">→</button>
     <button id="down">↓</button>
   </div>
   <script>
