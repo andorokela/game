@@ -19,17 +19,25 @@
     .game-container {
       display: flex;
       align-items: flex-start;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
     }
     canvas {
       background-color: #222;
     }
+    #tetris {
+      width: 80%;
+      height: auto;
+    }
     .info {
       margin-left: 20px;
       text-align: center;
+      width: 20%;
     }
     .controls {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      display: flex;
+      flex-direction: column;
       gap: 10px;
       margin-top: 20px;
     }
@@ -48,6 +56,12 @@
     .next-shape {
       margin-top: 20px;
     }
+    #nextShapeCanvas {
+      width: 100%;
+      height: auto;
+      transform: scale(0.3);
+      transform-origin: top left;
+    }
   </style>
 </head>
 <body>
@@ -62,13 +76,13 @@
         <p>Следующая фигура:</p>
         <canvas id="nextShapeCanvas" width="120" height="120"></canvas>
       </div>
+      <div class="controls">
+        <button id="left">←</button>
+        <button id="rotate">↑</button>
+        <button id="right">→</button>
+        <button id="down">↓</button>
+      </div>
     </div>
-  </div>
-  <div class="controls">
-    <button id="left">←</button>
-    <button id="rotate">↑</button>
-    <button id="right">→</button>
-    <button id="down">↓</button>
   </div>
   <script>
     const canvas = document.getElementById('tetris');
