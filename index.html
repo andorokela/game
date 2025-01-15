@@ -57,10 +57,9 @@
       margin-top: 20px;
     }
     #nextShapeCanvas {
-      width: 100%;
-      height: auto;
-      transform: scale(0.3);
-      transform-origin: top left;
+      width: 60px; /* Размер как у кнопки */
+      height: 60px;
+      background-color: #333;
     }
   </style>
 </head>
@@ -74,11 +73,11 @@
       <p id="eventMessage" style="color: yellow; display: none;"></p>
       <div class="next-shape">
         <p>Следующая фигура:</p>
-        <canvas id="nextShapeCanvas" width="120" height="120"></canvas>
+        <canvas id="nextShapeCanvas" width="60" height="60"></canvas>
       </div>
       <div class="controls">
-        <button id="left">←</button>
         <button id="rotate">↑</button>
+        <button id="left">←</button>
         <button id="right">→</button>
         <button id="down">↓</button>
       </div>
@@ -146,34 +145,34 @@
       nextShapeCtx.fillStyle = '#333';
       nextShapeCtx.fillRect(0, 0, nextShapeCanvas.width, nextShapeCanvas.height);
 
-      const centerX = (nextShapeCanvas.width - nextShape.shape[0].length * scale) / 2;
-      const centerY = (nextShapeCanvas.height - nextShape.shape.length * scale) / 2;
+      const centerX = (nextShapeCanvas.width - nextShape.shape[0].length * (scale / 2)) / 2;
+      const centerY = (nextShapeCanvas.height - nextShape.shape.length * (scale / 2)) / 2;
 
       nextShape.shape.forEach((row, y) => {
         row.forEach((value, x) => {
           if (value) {
-            drawBlock(nextShapeCtx, centerX + x * scale, centerY + y * scale, nextShape.color);
+            drawBlock(nextShapeCtx, centerX + x * (scale / 2), centerY + y * (scale / 2), nextShape.color, scale / 2);
           }
         });
       });
     }
 
     // Отрисовка фигуры с объёмным эффектом
-    function drawBlock(ctx, x, y, color) {
+    function drawBlock(ctx, x, y, color, blockScale = scale) {
       const gradient = ctx.createRadialGradient(
-        x + scale / 2, y + scale / 2, 0,
-        x + scale / 2, y + scale / 2, scale / 2
+        x + blockScale / 2, y + blockScale / 2, 0,
+        x + blockScale / 2, y + blockScale / 2, blockScale / 2
       );
       gradient.addColorStop(0, color);
       gradient.addColorStop(1, '#000');
 
       ctx.fillStyle = gradient;
-      ctx.fillRect(x, y, scale, scale);
+      ctx.fillRect(x, y, blockScale, blockScale);
 
       // Тень
       ctx.strokeStyle = '#000';
       ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, scale, scale);
+      ctx.strokeRect(x, y, blockScale, blockScale);
     }
 
     // Отрисовка фигуры
