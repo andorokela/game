@@ -69,6 +69,9 @@
     #captureButton {
       display: none; /* Скрываем кнопку "Сделать снимок" по умолчанию */
     }
+    #switchCameraButton {
+      display: none; /* Скрываем кнопку "Сменить камеру" по умолчанию */
+    }
   </style>
 </head>
 <body>
@@ -120,6 +123,7 @@
       let img;
       let isCameraActive = false;
       let currentFacingMode = 'environment'; // По умолчанию задняя камера
+      let currentStream = null; // Текущий поток камеры
 
       // Элементы управления
       const threshold1Input = document.getElementById('threshold1');
@@ -154,7 +158,9 @@
           video.srcObject = stream;
           video.play();
           isCameraActive = true;
+          currentStream = stream; // Сохраняем текущий поток
           captureButton.style.display = 'block';
+          switchCameraButton.style.display = 'block'; // Показываем кнопку смены камеры
           requestAnimationFrame(drawCameraFrame);
         } catch (error) {
           alert('Не удалось получить доступ к камере: ' + error.message);
@@ -180,6 +186,7 @@
         video.srcObject = null;
         isCameraActive = false;
         captureButton.style.display = 'none';
+        switchCameraButton.style.display = 'none'; // Скрываем кнопку смены камеры
         img = new Image();
         img.src = canvas.toDataURL('image/png');
         img.onload = function () {
@@ -302,8 +309,11 @@
       filePickerButton.addEventListener('click', openFilePicker);
       cameraButton.addEventListener('click', () => openCamera(currentFacingMode));
       switchCameraButton.addEventListener('click', () => {
+        if (currentStream) {
+          currentStream.getTracks().forEach(track => track.stop()); // Останавливаем текущий поток
+        }
         currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-        openCamera(currentFacingMode);
+        openCamera(currentFacingMode); // Переключаем камеру
       });
       captureButton.addEventListener('click', capturePhoto);
       applyCannyButton.addEventListener('click', applyCanny);
