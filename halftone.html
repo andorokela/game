@@ -66,6 +66,9 @@
     video {
       display: none; /* Скрываем видеоэлемент */
     }
+    #captureButton {
+      display: none; /* Скрываем кнопку "Сделать снимок" по умолчанию */
+    }
   </style>
 </head>
 <body>
@@ -74,6 +77,7 @@
     <div class="file-input-container">
       <button onclick="openFilePicker()">Выбрать файл</button>
       <button onclick="openCamera()">Сделать фото</button>
+      <button id="captureButton" onclick="capturePhoto()">Сделать снимок</button>
     </div>
 
     <!-- Поле для выбора файла -->
@@ -114,6 +118,7 @@
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const video = document.getElementById('video');
+    const captureButton = document.getElementById('captureButton');
     let img;
     let isCameraActive = false;
 
@@ -155,12 +160,17 @@
 
     // Функция для открытия камеры
     async function openCamera() {
+      if (isCameraActive) return; // Если камера уже активна, ничего не делаем
+
       try {
         // Запрашиваем доступ к камере
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream; // Подключаем поток к видеоэлементу
         video.play(); // Запускаем видео
         isCameraActive = true;
+
+        // Показываем кнопку "Сделать снимок"
+        captureButton.style.display = 'block';
 
         // Запускаем отрисовку кадров с камеры на холсте
         requestAnimationFrame(drawCameraFrame);
@@ -179,6 +189,39 @@
 
       // Повторяем отрисовку
       requestAnimationFrame(drawCameraFrame);
+    }
+
+    // Функция для захвата фото с камеры
+    function capturePhoto() {
+      if (!isCameraActive) return; // Если камера не активна, ничего не делаем
+
+      // Останавливаем поток с камеры
+      const stream = video.srcObject;
+      const tracks = stream.getTracks();
+      tracks.forEach(track => track.stop());
+      video.srcObject = null;
+      isCameraActive = false;
+
+      // Скрываем кнопку "Сделать снимок"
+      captureButton.style.display = 'none';
+
+      // Преобразуем текущий кадр в изображение
+      img = new Image();
+      img.src = canvas.toDataURL('image/png');
+      img.onload = function () {
+        // Устанавливаем размер холста в зависимости от ширины экрана
+        const maxWidth = window.innerWidth * 0.9; // 90% ширины экрана
+        const ratio = maxWidth / img.width;
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+
+        // Очищаем холст и рисуем изображение
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // Автоматически создаем полутоновый узор
+        drawHalftone();
+      };
     }
 
     // Функция для загрузки изображения
