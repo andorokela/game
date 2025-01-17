@@ -155,13 +155,13 @@
         if (isCameraActive) return;
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
-          video.srcObject = stream;
-          video.play();
+          video.srcObject = stream; // Присваиваем новый поток элементу <video>
+          video.play(); // Запускаем воспроизведение
           isCameraActive = true;
           currentStream = stream; // Сохраняем текущий поток
           captureButton.style.display = 'block';
           switchCameraButton.style.display = 'block'; // Показываем кнопку смены камеры
-          requestAnimationFrame(drawCameraFrame);
+          requestAnimationFrame(drawCameraFrame); // Запускаем отрисовку кадров
         } catch (error) {
           alert('Не удалось получить доступ к камере: ' + error.message);
         }
@@ -308,12 +308,12 @@
       // Назначаем обработчики событий
       filePickerButton.addEventListener('click', openFilePicker);
       cameraButton.addEventListener('click', () => openCamera(currentFacingMode));
-      switchCameraButton.addEventListener('click', () => {
+      switchCameraButton.addEventListener('click', async () => {
         if (currentStream) {
           currentStream.getTracks().forEach(track => track.stop()); // Останавливаем текущий поток
         }
-        currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-        openCamera(currentFacingMode); // Переключаем камеру
+        currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment'; // Меняем камеру
+        await openCamera(currentFacingMode); // Открываем новую камеру
       });
       captureButton.addEventListener('click', capturePhoto);
       applyCannyButton.addEventListener('click', applyCanny);
