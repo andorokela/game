@@ -183,6 +183,12 @@
     function drawCameraFrame() {
       if (!isCameraActive) return; // Останавливаем, если камера не активна
 
+      // Устанавливаем размер холста в зависимости от пропорций видео
+      const maxWidth = window.innerWidth * 0.9; // 90% ширины экрана
+      const aspectRatio = video.videoWidth / video.videoHeight;
+      canvas.width = maxWidth;
+      canvas.height = maxWidth / aspectRatio;
+
       // Очищаем холст и рисуем текущий кадр с камеры
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -209,11 +215,11 @@
       img = new Image();
       img.src = canvas.toDataURL('image/png');
       img.onload = function () {
-        // Устанавливаем размер холста в зависимости от ширины экрана
+        // Устанавливаем размер холста в зависимости от пропорций изображения
         const maxWidth = window.innerWidth * 0.9; // 90% ширины экрана
-        const ratio = maxWidth / img.width;
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
+        const aspectRatio = img.width / img.height;
+        canvas.width = maxWidth;
+        canvas.height = maxWidth / aspectRatio;
 
         // Очищаем холст и рисуем изображение
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -233,11 +239,11 @@
           img = new Image();
           img.src = e.target.result;
           img.onload = function () {
-            // Устанавливаем размер холста в зависимости от ширины экрана
+            // Устанавливаем размер холста в зависимости от пропорций изображения
             const maxWidth = window.innerWidth * 0.9; // 90% ширины экрана
-            const ratio = maxWidth / img.width;
-            canvas.width = img.width * ratio;
-            canvas.height = img.height * ratio;
+            const aspectRatio = img.width / img.height;
+            canvas.width = maxWidth;
+            canvas.height = maxWidth / aspectRatio;
 
             // Очищаем холст и рисуем изображение
             ctx.clearRect(0, 0, canvas.width, canvas.height);
