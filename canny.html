@@ -122,6 +122,34 @@
       let currentFacingMode = 'environment'; // По умолчанию задняя камера
       let stream;
 
+      // Функция для открытия файлового picker
+      function openFilePicker() {
+        const input = document.getElementById('imageInput');
+        input.click();
+      }
+
+      // Функция для загрузки изображения
+      document.getElementById('imageInput').addEventListener('change', function (event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            img = new Image();
+            img.src = e.target.result;
+            img.onload = function () {
+              const maxWidth = window.innerWidth * 0.9;
+              const aspectRatio = img.width / img.height;
+              canvas.width = maxWidth;
+              canvas.height = maxWidth / aspectRatio;
+
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
       // Функция для запуска камеры с указанной стороной (front или back)
       async function startCamera(facingMode) {
         if (isCameraActive) {
@@ -190,28 +218,6 @@
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         };
       }
-
-      // Функция для загрузки изображения
-      document.getElementById('imageInput').addEventListener('change', function (event) {
-        const file = event.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = function (e) {
-            img = new Image();
-            img.src = e.target.result;
-            img.onload = function () {
-              const maxWidth = window.innerWidth * 0.9;
-              const aspectRatio = img.width / img.height;
-              canvas.width = maxWidth;
-              canvas.height = maxWidth / aspectRatio;
-
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
-              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            };
-          };
-          reader.readAsDataURL(file);
-        }
-      });
 
       // Функция для применения фильтра Canny
       function applyCanny() {
