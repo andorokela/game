@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Тетрис на HTML5</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #000;
+      font-family: Arial, sans-serif;
+      color: white;
+    }
+    .game-container {
+      display: flex;
+      align-items: flex-start;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    canvas {
+      background-color: #222;
+    }
+    #tetris {
+      width: 80%;
+      height: auto;
+    }
+    .info {
+      margin-left: 20px;
+      text-align: center;
+      width: 20%;
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .controls button {
+      font-size: 20px;
+      padding: 15px;
+      background-color: #444;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .controls button:active {
+      background-color: #666;
+    }
+    .next-shape {
+      margin-top: 20px;
+    }
+    #nextShapeCanvas {
+      width: 60px; /* Размер как у кнопки */
+      height: 60px;
+      background-color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <canvas id="tetris" width="300" height="600"></canvas>
+    <div class="info">
+      <h2>Тетрис</h2>
+      <p>Очки: <span id="score">0</span></p>
+      <p id="pauseMessage" style="color: red; display: none;">Пауза</p>
+      <p id="eventMessage" style="color: yellow; display: none;"></p>
+      <div class="next-shape">
+        <p>Следующая фигура:</p>
+        <canvas id="nextShapeCanvas" width="60" height="60"></canvas>
+      </div>
+      <div class="controls">
+        <button id="rotate">↑</button>
+        <button id="left">←</button>
+        <button id="right">→</button>
+        <button id="down">↓</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const canvas = document.getElementById('tetris');
+    const ctx = canvas.getContext('2d');
+    const nextShapeCanvas = document.getElementById('nextShapeCanvas');
+    const nextShapeCtx = nextShapeCanvas.getContext('2d');
+    const scoreElement = document.getElementById('score');
+    const pauseMessage = document.getElementById('pauseMessage');
+    const eventMessage = document.getElementById('eventMessage');
+
+    // Масштабирование
+    const scale = 30;
+    const rows = canvas.height / scale;
+    const columns = canvas.width / scale;
+
+    // Игровое поле
+    let grid = Array.from({ length: rows }, () => Array(columns).fill(0));
+
+    // Фигуры и их цвета
+    const shapes = [
+      { shape: [[1, 1, 1, 1]], color: 'cyan' }, // I
+      { shape: [[1, 1], [1, 1]], color: 'yellow' }, // O
+      { shape: [[0, 1, 0], [1, 1, 1]], color: 'purple' }, // T
+      { shape: [[1, 0, 0], [1, 1, 1]], color: 'orange' }, // L
+      { shape: [[0, 0, 1], [1, 1, 1]], color: 'blue' }, // J
+      { shape: [[0, 1, 1], [1, 1, 0]], color: 'green' }, // S
+      { shape: [[1, 1, 0], [0, 1, 1]], color: 'red' }, // Z
+    ];
+
+    // Текущая и следующая фигуры
+    let currentShape;
+    let nextShape;
+    let currentPosition;
+    let currentColor;
+
+    // Очки
+    let score = 0;
+
+    // Пауза
+    let isPaused = false;
+
+    // Случайные события
+    let isEventActive = false;
+    let eventTimeout;
+
+    // Создание новой фигуры
+    function createShape() {
+      if (!nextShape) {
+        nextShape = shapes[Math.floor(Math.random() * shapes.length)];
+      }
+      currentShape = nextShape.shape;
+      currentColor = nextShape.color;
+      currentPosition = { x: Math.floor(columns / 2) - 1, y: 0 };
+      nextShape = shapes[Math.floor(Math.random() * shapes.length)];
+      drawNextShape();
+    }
+
+    // Отрисовка следующей фигуры
+    function drawNextShape() {
+      nextShapeCtx.clearRect(0, 0, nextShapeCanvas.width, nextShapeCanvas.height);
+      nextShapeCtx.fillStyle = '#333';
+      nextShapeCtx.fillRect(0, 0, nextShapeCanvas.width, nextShapeCanvas.height);
+
+      const centerX = (nextShapeCanvas.width - nextShape.shape[0].length * (scale / 2)) / 2;
+      const centerY = (nextShapeCanvas.height - nextShape.shape.length * (scale / 2)) / 2;
+
+      nextShape.shape.forEach((row, y) => {
+        row.forEach((value, x) => {
+          if (value) {
+            drawBlock(nextShapeCtx, centerX + x * (scale / 2), centerY + y * (scale / 2), nextShape.color, scale / 2);
+          }
+        });
+      });
+    }
+
+    // Отрисовка фигуры с объёмным эффектом
+    function drawBlock(ctx, x, y, color, blockScale = scale) {
+      const gradient = ctx.createRadialGradient(
+        x + blockScale / 2, y + blockScale / 2, 0,
+        x + blockScale / 2, y + blockScale / 2, blockScale / 2
+      );
+      gradient.addColorStop(0, color);
+      gradient.addColorStop(1, '#000');
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(x, y, blockScale, blockScale);
+
+      // Тень
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, blockScale, blockScale);
+    }
+
+    // Отрисовка фигуры
+    function drawShape() {
+      currentShape.forEach((row, y) => {
+        row.forEach((value, x) => {
+          if (value) {
+            drawBlock(ctx, (currentPosition.x + x) * scale, (currentPosition.y + y) * scale, currentColor);
+          }
+        });
+      });
+    }
+
+    // Отрисовка сетки
+    function drawGrid() {
+      grid.forEach((row, y) => {
+        row.forEach((value, x) => {
+          if (value) {
+            drawBlock(ctx, x * scale, y * scale, value);
+          }
+        });
+      });
+    }
+
+    // Проверка столкновений
+    function collide() {
+      return currentShape.some((row, y) => {
+        return row.some((value, x) => {
+          return (
+            value !== 0 &&
+            (grid[currentPosition.y + y] && grid[currentPosition.y + y][currentPosition.x + x]) !== 0
+          );
+        });
+      });
+    }
+
+    // Фиксация фигуры на поле
+    function freeze() {
+      currentShape.forEach((row, y) => {
+        row.forEach((value, x) => {
+          if (value) {
+            grid[currentPosition.y + y][currentPosition.x + x] = currentColor;
+          }
+        });
+      });
+    }
+
+    // Очистка заполненных линий с анимацией
+    function clearLines() {
+      let linesCleared = 0;
+      const linesToClear = [];
+
+      // Находим строки для удаления
+      for (let y = grid.length - 1; y >= 0; y--) {
+        if (grid[y].every(cell => cell !== 0)) {
+          linesToClear.push(y);
+        }
+      }
+
+      // Если удаляется несколько строк, добавляем бонусные очки
+      if (linesToClear.length > 0) {
+        linesCleared = linesToClear.length;
+        score += linesCleared * 100;
+
+        // Бонус за множественное удаление
+        if (linesCleared > 1) {
+          score += (linesCleared - 1) * 200; // Дополнительные очки
+          triggerRandomEvent(); // Активируем случайное событие
+        }
+
+        // Анимация удаления строк
+        animateLineClear(linesToClear);
+      }
+
+      scoreElement.textContent = score;
+    }
+
+    // Анимация удаления строк
+    function animateLineClear(linesToClear) {
+      let opacity = 1;
+      const animate = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+        drawShape();
+
+        // Затемнение удаляемых строк
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+        linesToClear.forEach(y => {
+          ctx.fillRect(0, y * scale, canvas.width, scale);
+        });
+
+        opacity -= 0.05;
+        if (opacity > 0) {
+          requestAnimationFrame(animate);
+        } else {
+          // Удаляем строки после анимации
+          linesToClear.forEach(y => {
+            grid.splice(y, 1);
+            grid.unshift(Array(columns).fill(0));
+          });
+        }
+      };
+      animate();
+    }
+
+    // Случайные события
+    function triggerRandomEvent() {
+      if (isEventActive) return;
+
+      const events = [
+        { message: "Ускорение!", effect: () => (dropInterval = 200), reset: () => (dropInterval = 500) },
+        { message: "Замедление!", effect: () => (dropInterval = 1000), reset: () => (dropInterval = 500) },
+        { message: "Инверсия управления!", effect: () => invertControls(true), reset: () => invertControls(false) },
+      ];
+
+      const randomEvent = events[Math.floor(Math.random() * events.length)];
+      randomEvent.effect();
+      eventMessage.textContent = randomEvent.message;
+      eventMessage.style.display = 'block';
+
+      isEventActive = true;
+      clearTimeout(eventTimeout);
+      eventTimeout = setTimeout(() => {
+        randomEvent.reset();
+        eventMessage.style.display = 'none';
+        isEventActive = false;
+      }, 5000); // Событие длится 5 секунд
+    }
+
+    // Инверсия управления
+    let controlsInverted = false;
+    function invertControls(invert) {
+      controlsInverted = invert;
+    }
+
+    // Управление с клавиатуры
+    document.addEventListener('keydown', (e) => {
+      if (isPaused && e.key !== 'p') return;
+
+      if (e.key === (controlsInverted ? 'ArrowRight' : 'ArrowLeft')) {
+        currentPosition.x--;
+        if (collide()) currentPosition.x++;
+      }
+      if (e.key === (controlsInverted ? 'ArrowLeft' : 'ArrowRight')) {
+        currentPosition.x++;
+        if (collide()) currentPosition.x--;
+      }
+      if (e.key === 'ArrowDown') {
+        drop();
+      }
+      if (e.key === 'ArrowUp') {
+        const rotated = currentShape[0].map((_, i) => currentShape.map(row => row[i])).reverse();
+        const previousShape = currentShape;
+        currentShape = rotated;
+        if (collide()) currentShape = previousShape;
+      }
+      if (e.key === 'p') {
+        isPaused = !isPaused;
+        pauseMessage.style.display = isPaused ? 'block' : 'none';
+      }
+    });
+
+    // Управление с кнопок
+    document.getElementById('left').addEventListener('click', () => {
+      currentPosition.x--;
+      if (collide()) currentPosition.x++;
+    });
+    document.getElementById('right').addEventListener('click', () => {
+      currentPosition.x++;
+      if (collide()) currentPosition.x--;
+    });
+    document.getElementById('rotate').addEventListener('click', () => {
+      const rotated = currentShape[0].map((_, i) => currentShape.map(row => row[i])).reverse();
+      const previousShape = currentShape;
+      currentShape = rotated;
+      if (collide()) currentShape = previousShape;
+    });
+    document.getElementById('down').addEventListener('click', () => {
+      drop();
+    });
+
+    // Движение фигуры вниз
+    let dropInterval = 500; // Интервал падения
+    function drop() {
+      if (isPaused) return;
+      currentPosition.y++;
+      if (collide()) {
+        currentPosition.y--;
+        freeze();
+        clearLines();
+        createShape();
+        if (collide()) {
+          alert('Игра окончена! Ваш счёт: ' + score);
+          grid = Array.from({ length: rows }, () => Array(columns).fill(0));
+          score = 0;
+          scoreElement.textContent = score;
+        }
+      }
+    }
+
+    // Игровой цикл
+    let lastTime = 0;
+    function gameLoop(timestamp) {
+      if (!isPaused && timestamp - lastTime > dropInterval) {
+        drop();
+        lastTime = timestamp;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height); // Очистка холста
+      drawGrid();
+      drawShape();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Запуск игры
+    createShape();
+    gameLoop(0);
+  </script>
+</body>
+</html>
