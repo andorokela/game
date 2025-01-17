@@ -63,21 +63,24 @@
     .file-input-container button {
       flex: 1;
     }
+    video {
+      display: none; /* Скрываем видеоэлемент */
+    }
   </style>
 </head>
 <body>
   <h1>Создание полутонового изображения</h1>
   <div class="controls">
     <div class="file-input-container">
-      <button onclick="document.getElementById('imageInput').click()">Выбрать файл</button>
-      <button onclick="document.getElementById('cameraInput').click()">Сделать фото</button>
+      <button onclick="openFilePicker()">Выбрать файл</button>
+      <button onclick="openCamera()">Сделать фото</button>
     </div>
 
     <!-- Поле для выбора файла -->
     <input type="file" id="imageInput" accept="image/*" style="display: none;" />
 
-    <!-- Поле для камеры -->
-    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" />
+    <!-- Видеоэлемент для камеры -->
+    <video id="video" autoplay></video>
 
     <div class="slider-container">
       <label for="resolution">Разрешение:</label>
@@ -110,6 +113,7 @@
   <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
+    const video = document.getElementById('video');
     let img;
 
     // Элементы управления
@@ -142,8 +146,70 @@
       drawHalftone();
     });
 
+    // Функция для открытия файлового picker
+    function openFilePicker() {
+      const input = document.getElementById('imageInput');
+      input.click(); // Открываем файловый picker
+    }
+
+    // Функция для открытия камеры
+    async function openCamera() {
+      try {
+        // Запрашиваем доступ к камере
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream; // Подключаем поток к видеоэлементу
+        video.play(); // Запускаем видео
+
+        // Показываем кнопку для захвата фото
+        const captureButton = document.createElement('button');
+        captureButton.textContent = 'Сделать снимок';
+        captureButton.onclick = capturePhoto;
+        document.querySelector('.controls').appendChild(captureButton);
+      } catch (error) {
+        alert('Не удалось получить доступ к камере: ' + error.message);
+      }
+    }
+
+    // Функция для захвата фото с камеры
+    function capturePhoto() {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = video.videoWidth;
+      tempCanvas.height = video.videoHeight;
+      const tempCtx = tempCanvas.getContext('2d');
+
+      // Рисуем текущий кадр с видео на холсте
+      tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+
+      // Преобразуем холст в изображение
+      img = new Image();
+      img.src = tempCanvas.toDataURL('image/png');
+      img.onload = function () {
+        // Устанавливаем размер холста в зависимости от ширины экрана
+        const maxWidth = window.innerWidth * 0.9; // 90% ширины экрана
+        const ratio = maxWidth / img.width;
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+
+        // Очищаем холст и рисуем изображение
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // Автоматически создаем полутоновый узор
+        drawHalftone();
+      };
+
+      // Останавливаем поток с камеры
+      const stream = video.srcObject;
+      const tracks = stream.getTracks();
+      tracks.forEach(track => track.stop());
+      video.srcObject = null;
+
+      // Убираем кнопку захвата
+      document.querySelector('.controls').removeChild(document.querySelector('button[onclick="capturePhoto"]'));
+    }
+
     // Функция для загрузки изображения
-    function loadImage(event) {
+    document.getElementById('imageInput').addEventListener('change', function (event) {
       const file = event.target.files[0];
       if (file) {
         const reader = new FileReader();
@@ -167,13 +233,7 @@
         };
         reader.readAsDataURL(file);
       }
-    }
-
-    // Обработчик для выбора файла
-    document.getElementById('imageInput').addEventListener('change', loadImage);
-
-    // Обработчик для камеры
-    document.getElementById('cameraInput').addEventListener('change', loadImage);
+    });
 
     // Создание полутонового узора
     function drawHalftone() {
