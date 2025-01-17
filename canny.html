@@ -78,56 +78,115 @@
       <button id="filePickerButton">Выбрать файл</button>
       <button id="cameraButton">Сделать фото</button>
       <button id="captureButton">Сделать снимок</button>
-      <button id="switchCameraButton">Сменить камеру</button> <!-- Новая кнопка -->
     </div>
-
     <!-- Поле для выбора файла -->
     <input type="file" id="imageInput" accept="image/*" style="display: none;" />
-
     <!-- Видеоэлемент для камеры -->
     <video id="video" autoplay></video>
-
     <div class="slider-container">
       <label for="threshold1">Порог 1:</label>
       <input type="range" id="threshold1" min="0" max="500" value="100" />
       <span id="threshold1Value">100</span>
     </div>
-
     <div class="slider-container">
       <label for="threshold2">Порог 2:</label>
       <input type="range" id="threshold2" min="0" max="500" value="200" />
       <span id="threshold2Value">200</span>
     </div>
-
     <button id="applyCannyButton">Применить Canny</button>
-    <button id="saveSvgButton">Сохранить SVG</button>
+    <button id="saveSvgButton">Сохранить SVG</button> <!-- Новая кнопка -->
   </div>
   <canvas id="canvas"></canvas>
-
-  <!-- Локальная библиотека OpenCV.js -->
+ <!-- Локальная библиотека OpenCV.js -->
   <script src="https://andorokela.github.io/game/opencv.js" type="text/javascript"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    // Ждем загрузки OpenCV.js
+    function onOpenCvReady() {
+      console.log("OpenCV.js загружен и готов к использованию.");
+      initApp(); // Инициализация приложения после загрузки OpenCV
+    }
+    // Инициализация приложения
+    function initApp() {
       const canvas = document.getElementById('canvas');
       const ctx = canvas.getContext('2d');
       const video = document.getElementById('video');
       const captureButton = document.getElementById('captureButton');
       const filePickerButton = document.getElementById('filePickerButton');
       const cameraButton = document.getElementById('cameraButton');
-      const switchCameraButton = document.getElementById('switchCameraButton'); // Новая кнопка
       const applyCannyButton = document.getElementById('applyCannyButton');
       const saveSvgButton = document.getElementById('saveSvgButton');
       let img;
       let isCameraActive = false;
-      let currentFacingMode = 'environment'; // По умолчанию задняя камера
-      let stream;
-
+      // Элементы управления
+      const threshold1Input = document.getElementById('threshold1');
+      const threshold2Input = document.getElementById('threshold2');
+      // Числовые значения
+      const threshold1Value = document.getElementById('threshold1Value');
+      const threshold2Value = document.getElementById('threshold2Value');
+      // Проверка, что элементы существуют
+      if (!threshold1Input || !threshold2Input || !threshold1Value || !threshold2Value) {
+        console.error("Один или несколько элементов управления не найдены в DOM.");
+        return;
+      }
+      // Обновление числовых значений
+      threshold1Input.addEventListener('input', () => {
+        threshold1Value.textContent = threshold1Input.value;
+        applyCanny(); // Применяем фильтр Canny при изменении ползунка
+      });
+      threshold2Input.addEventListener('input', () => {
+        threshold2Value.textContent = threshold2Input.value;
+        applyCanny(); // Применяем фильтр Canny при изменении ползунка
+      });
       // Функция для открытия файлового picker
       function openFilePicker() {
         const input = document.getElementById('imageInput');
         input.click();
       }
-
+      // Функция для открытия камеры
+      async function openCamera() {
+        if (isCameraActive) return;
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          video.srcObject = stream;
+          video.play();
+          isCameraActive = true;
+          captureButton.style.display = 'block';
+          requestAnimationFrame(drawCameraFrame);
+        } catch (error) {
+          alert('Не удалось получить доступ к камере: ' + error.message);
+        }
+      }
+      // Функция для отрисовки кадров с камеры на холсте
+      function drawCameraFrame() {
+        if (!isCameraActive) return;
+        const maxWidth = window.innerWidth * 0.9;
+        const aspectRatio = video.videoWidth / video.videoHeight;
+        canvas.width = maxWidth;
+        canvas.height = maxWidth / aspectRatio;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        requestAnimationFrame(drawCameraFrame);
+      }
+      // Функция для захвата фото с камеры
+      function capturePhoto() {
+        if (!isCameraActive) return;
+        const stream = video.srcObject;
+        const tracks = stream.getTracks();
+        tracks.forEach(track => track.stop());
+        video.srcObject = null;
+        isCameraActive = false;
+        captureButton.style.display = 'none';
+        img = new Image();
+        img.src = canvas.toDataURL('image/png');
+        img.onload = function () {
+          const maxWidth = window.innerWidth * 0.9;
+          const aspectRatio = img.width / img.height;
+          canvas.width = maxWidth;
+          canvas.height = maxWidth / aspectRatio;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+      }
       // Функция для загрузки изображения
       document.getElementById('imageInput').addEventListener('change', function (event) {
         const file = event.target.files[0];
@@ -141,7 +200,6 @@
               const aspectRatio = img.width / img.height;
               canvas.width = maxWidth;
               canvas.height = maxWidth / aspectRatio;
-
               ctx.clearRect(0, 0, canvas.width, canvas.height);
               ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             };
@@ -149,147 +207,62 @@
           reader.readAsDataURL(file);
         }
       });
-
-      // Функция для запуска камеры с указанной стороной (front или back)
-      async function startCamera(facingMode) {
-        if (isCameraActive) {
-          // Останавливаем текущий поток
-          stream.getTracks().forEach(track => track.stop());
-        }
-
-        try {
-          const constraints = {
-            video: { facingMode: facingMode }
-          };
-          stream = await navigator.mediaDevices.getUserMedia(constraints);
-          video.srcObject = stream;
-          video.play();
-          isCameraActive = true;
-          captureButton.style.display = 'block';
-          currentFacingMode = facingMode;
-          requestAnimationFrame(drawCameraFrame);
-        } catch (error) {
-          alert('Не удалось получить доступ к камере: ' + error.message);
-        }
-      }
-
-      // Функция для переключения камеры
-      function switchCamera() {
-        if (currentFacingMode === 'environment') {
-          startCamera('user'); // Переключаем на фронтальную камеру
-        } else {
-          startCamera('environment'); // Переключаем на заднюю камеру
-        }
-      }
-
-      // Функция для отрисовки кадров с камеры на холсте
-      function drawCameraFrame() {
-        if (!isCameraActive) return;
-
-        const maxWidth = window.innerWidth * 0.9;
-        const aspectRatio = video.videoWidth / video.videoHeight;
-        canvas.width = maxWidth;
-        canvas.height = maxWidth / aspectRatio;
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        requestAnimationFrame(drawCameraFrame);
-      }
-
-      // Функция для захвата фото с камеры
-      function capturePhoto() {
-        if (!isCameraActive) return;
-
-        stream.getTracks().forEach(track => track.stop());
-        video.srcObject = null;
-        isCameraActive = false;
-        captureButton.style.display = 'none';
-
-        img = new Image();
-        img.src = canvas.toDataURL('image/png');
-        img.onload = function () {
-          const maxWidth = window.innerWidth * 0.9;
-          const aspectRatio = img.width / img.height;
-          canvas.width = maxWidth;
-          canvas.height = maxWidth / aspectRatio;
-
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        };
-      }
-
       // Функция для применения фильтра Canny
       function applyCanny() {
         if (!img && !isCameraActive) {
           alert('Сначала загрузите изображение или включите камеру!');
           return;
         }
-
         const threshold1 = parseInt(threshold1Input.value);
         const threshold2 = parseInt(threshold2Input.value);
-
         // Создаем временный холст для обработки изображения
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = canvas.width;
         tempCanvas.height = canvas.height;
         const tempCtx = tempCanvas.getContext('2d');
-
         // Рисуем изображение на временном холсте
         if (isCameraActive) {
           tempCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
         } else {
           tempCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
         }
-
         // Получаем данные изображения
         const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
-
         // Создаем матрицу для OpenCV
         const src = cv.matFromImageData(imageData);
         const dst = new cv.Mat();
-
         // Преобразуем изображение в оттенки серого
         cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
-
         // Применяем фильтр Canny
         cv.Canny(src, dst, threshold1, threshold2);
-
         // Преобразуем результат обратно в формат RGBA
         const rgbaDst = new cv.Mat();
         cv.cvtColor(dst, rgbaDst, cv.COLOR_GRAY2RGBA, 0);
-
         // Преобразуем результат обратно в изображение
         const resultImageData = new ImageData(
           new Uint8ClampedArray(rgbaDst.data),
           rgbaDst.cols,
           rgbaDst.rows
         );
-
         // Очищаем основной холст и рисуем результат
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.putImageData(resultImageData, 0, 0);
-
         // Освобождаем ресурсы
         src.delete();
         dst.delete();
         rgbaDst.delete();
       }
-
       // Функция для сохранения результата в SVG
       function saveAsSvg() {
         if (!canvas || !ctx) {
           alert("Нет данных для сохранения.");
           return;
         }
-
         // Получаем данные изображения с холста
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const pixels = imageData.data;
-
         // Создаем SVG-элемент
         let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}">\n`;
-
         // Собираем все точки границ
         const points = [];
         for (let y = 0; y < canvas.height; y++) {
@@ -301,11 +274,9 @@
             }
           }
         }
-
         // Упрощаем контуры
         const epsilon = 1; // Параметр упрощения (можно регулировать)
         const simplifiedPoints = simplifyContour(points, epsilon);
-
         // Создаем SVG-пути на основе упрощенных точек
         svgContent += `<path d="M`;
         simplifiedPoints.forEach((point, index) => {
@@ -313,9 +284,7 @@
           if (index === 0) svgContent += 'L';
         });
         svgContent += `" fill="none" stroke="black" stroke-width="1" />\n`;
-
         svgContent += `</svg>`;
-
         // Создаем Blob и ссылку для скачивания
         const blob = new Blob([svgContent], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
@@ -325,16 +294,19 @@
         a.click();
         URL.revokeObjectURL(url);
       }
-
+      // Назначаем обработчики событий
+      filePickerButton.addEventListener('click', openFilePicker);
+      cameraButton.addEventListener('click', openCamera);
+      captureButton.addEventListener('click', capturePhoto);
+      applyCannyButton.addEventListener('click', applyCanny);
+      saveSvgButton.addEventListener('click', saveAsSvg);
       // Функция для упрощения контуров с помощью алгоритма Рамера-Дугласа-Пекера
       function simplifyContour(points, epsilon) {
         if (points.length <= 2) return points;
-
         // Находим точку с максимальным отклонением
         let dmax = 0;
         let index = 0;
         const end = points.length - 1;
-
         for (let i = 1; i < end; i++) {
           const d = perpendicularDistance(points[i], points[0], points[end]);
           if (d > dmax) {
@@ -342,7 +314,6 @@
             dmax = d;
           }
         }
-
         // Если максимальное отклонение больше epsilon, рекурсивно упрощаем
         if (dmax > epsilon) {
           const left = simplifyContour(points.slice(0, index + 1), epsilon);
@@ -352,7 +323,6 @@
           return [points[0], points[end]];
         }
       }
-
       // Функция для вычисления перпендикулярного расстояния от точки до линии
       function perpendicularDistance(point, lineStart, lineEnd) {
         const area = Math.abs(
@@ -364,15 +334,9 @@
         );
         return area / lineLength;
       }
-
-      // Назначаем обработчики событий
-      filePickerButton.addEventListener('click', openFilePicker);
-      cameraButton.addEventListener('click', () => startCamera(currentFacingMode));
-      captureButton.addEventListener('click', capturePhoto);
-      switchCameraButton.addEventListener('click', switchCamera); // Обработчик для новой кнопки
-      applyCannyButton.addEventListener('click', applyCanny);
-      saveSvgButton.addEventListener('click', saveAsSvg);
-    });
+    }
+    // Проверка загрузки OpenCV
+    cv['onRuntimeInitialized'] = onOpenCvReady;
   </script>
 </body>
 </html>
