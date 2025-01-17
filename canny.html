@@ -78,6 +78,7 @@
       <button id="filePickerButton">Выбрать файл</button>
       <button id="cameraButton">Сделать фото</button>
       <button id="captureButton">Сделать снимок</button>
+      <button id="switchCameraButton">Сменить камеру</button>
     </div>
     <!-- Поле для выбора файла -->
     <input type="file" id="imageInput" accept="image/*" style="display: none;" />
@@ -113,10 +114,13 @@
       const captureButton = document.getElementById('captureButton');
       const filePickerButton = document.getElementById('filePickerButton');
       const cameraButton = document.getElementById('cameraButton');
+      const switchCameraButton = document.getElementById('switchCameraButton');
       const applyCannyButton = document.getElementById('applyCannyButton');
       const saveSvgButton = document.getElementById('saveSvgButton');
       let img;
       let isCameraActive = false;
+      let currentFacingMode = 'environment'; // По умолчанию задняя камера
+
       // Элементы управления
       const threshold1Input = document.getElementById('threshold1');
       const threshold2Input = document.getElementById('threshold2');
@@ -143,10 +147,10 @@
         input.click();
       }
       // Функция для открытия камеры
-      async function openCamera() {
+      async function openCamera(facingMode = 'environment') {
         if (isCameraActive) return;
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
           video.srcObject = stream;
           video.play();
           isCameraActive = true;
@@ -296,7 +300,11 @@
       }
       // Назначаем обработчики событий
       filePickerButton.addEventListener('click', openFilePicker);
-      cameraButton.addEventListener('click', openCamera);
+      cameraButton.addEventListener('click', () => openCamera(currentFacingMode));
+      switchCameraButton.addEventListener('click', () => {
+        currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+        openCamera(currentFacingMode);
+      });
       captureButton.addEventListener('click', capturePhoto);
       applyCannyButton.addEventListener('click', applyCanny);
       saveSvgButton.addEventListener('click', saveAsSvg);
