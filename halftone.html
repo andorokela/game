@@ -115,6 +115,7 @@
     const ctx = canvas.getContext('2d');
     const video = document.getElementById('video');
     let img;
+    let isCameraActive = false;
 
     // Элементы управления
     const resolutionInput = document.getElementById('resolution');
@@ -159,53 +160,25 @@
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream; // Подключаем поток к видеоэлементу
         video.play(); // Запускаем видео
+        isCameraActive = true;
 
-        // Показываем кнопку для захвата фото
-        const captureButton = document.createElement('button');
-        captureButton.textContent = 'Сделать снимок';
-        captureButton.onclick = capturePhoto;
-        document.querySelector('.controls').appendChild(captureButton);
+        // Запускаем отрисовку кадров с камеры на холсте
+        requestAnimationFrame(drawCameraFrame);
       } catch (error) {
         alert('Не удалось получить доступ к камере: ' + error.message);
       }
     }
 
-    // Функция для захвата фото с камеры
-    function capturePhoto() {
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = video.videoWidth;
-      tempCanvas.height = video.videoHeight;
-      const tempCtx = tempCanvas.getContext('2d');
+    // Функция для отрисовки кадров с камеры на холсте
+    function drawCameraFrame() {
+      if (!isCameraActive) return; // Останавливаем, если камера не активна
 
-      // Рисуем текущий кадр с видео на холсте
-      tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+      // Очищаем холст и рисуем текущий кадр с камеры
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // Преобразуем холст в изображение
-      img = new Image();
-      img.src = tempCanvas.toDataURL('image/png');
-      img.onload = function () {
-        // Устанавливаем размер холста в зависимости от ширины экрана
-        const maxWidth = window.innerWidth * 0.9; // 90% ширины экрана
-        const ratio = maxWidth / img.width;
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
-
-        // Очищаем холст и рисуем изображение
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-        // Автоматически создаем полутоновый узор
-        drawHalftone();
-      };
-
-      // Останавливаем поток с камеры
-      const stream = video.srcObject;
-      const tracks = stream.getTracks();
-      tracks.forEach(track => track.stop());
-      video.srcObject = null;
-
-      // Убираем кнопку захвата
-      document.querySelector('.controls').removeChild(document.querySelector('button[onclick="capturePhoto"]'));
+      // Повторяем отрисовку
+      requestAnimationFrame(drawCameraFrame);
     }
 
     // Функция для загрузки изображения
@@ -237,8 +210,8 @@
 
     // Создание полутонового узора
     function drawHalftone() {
-      if (!img) {
-        alert('Сначала загрузите изображение!');
+      if (!img && !isCameraActive) {
+        alert('Сначала загрузите изображение или включите камеру!');
         return;
       }
 
@@ -257,7 +230,11 @@
       const tempCtx = tempCanvas.getContext('2d');
 
       // Рисуем изображение на временном холсте
-      tempCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      if (isCameraActive) {
+        tempCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      } else {
+        tempCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      }
 
       // Применяем яркость и контрастность
       const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
@@ -306,7 +283,11 @@
       const tempCtx = tempCanvas.getContext('2d');
 
       // Рисуем изображение на временном холсте
-      tempCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      if (isCameraActive) {
+        tempCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      } else {
+        tempCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      }
 
       // Обрабатываем каждый пиксель
       for (let y = 0; y < canvas.height; y += stepY) {
