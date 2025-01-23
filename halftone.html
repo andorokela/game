@@ -69,6 +69,15 @@
     #captureButton {
       display: none; /* Скрываем кнопку "Сделать снимок" по умолчанию */
     }
+    #switchCameraButton {
+      display: none; /* Скрываем кнопку "Сменить камеру" по умолчанию */
+    }
+    .loading-spinner {
+      display: none;
+      font-size: 16px;
+      color: #007bff;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -78,6 +87,7 @@
       <button onclick="openFilePicker()">Выбрать файл</button>
       <button onclick="openCamera()">Сделать фото</button>
       <button id="captureButton" onclick="capturePhoto()">Сделать снимок</button>
+      <button id="switchCameraButton" onclick="switchCamera()">Сменить камеру</button>
     </div>
 
     <!-- Поле для выбора файла -->
@@ -111,6 +121,7 @@
     </div>
 
     <button onclick="exportSVG()">Экспорт в SVG</button>
+    <div class="loading-spinner" id="loadingSpinner">Переключение камеры...</div>
   </div>
   <canvas id="canvas"></canvas>
 
@@ -119,8 +130,12 @@
     const ctx = canvas.getContext('2d');
     const video = document.getElementById('video');
     const captureButton = document.getElementById('captureButton');
+    const switchCameraButton = document.getElementById('switchCameraButton');
+    const loadingSpinner = document.getElementById('loadingSpinner');
     let img;
     let isCameraActive = false;
+    let currentFacingMode = 'environment'; // По умолчанию задняя камера
+    let currentStream = null; // Текущий поток камеры
 
     // Элементы управления
     const resolutionInput = document.getElementById('resolution');
@@ -159,21 +174,21 @@
     }
 
     // Функция для открытия камеры
-    async function openCamera() {
-      if (isCameraActive) return; // Если камера уже активна, ничего не делаем
-
+    async function openCamera(facingMode = currentFacingMode) {
+      if (isCameraActive) {
+        currentStream.getTracks().forEach(track => track.stop());
+        isCameraActive = false;
+      }
       try {
-        // Запрашиваем доступ к камере
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
         video.srcObject = stream; // Подключаем поток к видеоэлементу
         video.play(); // Запускаем видео
         isCameraActive = true;
-
-        // Показываем кнопку "Сделать снимок"
+        currentStream = stream; // Сохраняем текущий поток
+        currentFacingMode = facingMode; // Обновляем текущий режим камеры
         captureButton.style.display = 'block';
-
-        // Запускаем отрисовку кадров с камеры на холсте
-        requestAnimationFrame(drawCameraFrame);
+        switchCameraButton.style.display = 'block'; // Показываем кнопку смены камеры
+        requestAnimationFrame(drawCameraFrame); // Запускаем отрисовку кадров
       } catch (error) {
         alert('Не удалось получить доступ к камере: ' + error.message);
       }
@@ -210,6 +225,7 @@
 
       // Скрываем кнопку "Сделать снимок"
       captureButton.style.display = 'none';
+      switchCameraButton.style.display = 'none'; // Скрываем кнопку смены камеры
 
       // Преобразуем текущий кадр в изображение
       img = new Image();
@@ -313,6 +329,34 @@
           ctx.arc(x + stepX / 2, y + stepY / 2, circleSize / 2, 0, Math.PI * 2);
           ctx.fill();
         }
+      }
+    }
+
+    // Функция для смены камеры
+    async function switchCamera() {
+      if (!isCameraActive) return;
+
+      // Показываем индикатор загрузки
+      switchCameraButton.disabled = true;
+      loadingSpinner.style.display = 'block';
+
+      // Определяем новую камеру
+      const newFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+
+      // Останавливаем текущий поток камеры
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+
+      // Открываем новую камеру
+      try {
+        await openCamera(newFacingMode);
+      } catch (error) {
+        alert('Ошибка при переключении камеры: ' + error.message);
+      } finally {
+        // Скрываем индикатор загрузки
+        switchCameraButton.disabled = false;
+        loadingSpinner.style.display = 'none';
       }
     }
 
