@@ -191,6 +191,101 @@
         requestAnimationFrame(drawCameraFrame);
       }
 
+      // Функция для захвата фото с камеры
+      function capturePhoto() {
+        if (!isCameraActive) {
+          alert("Камера не активна. Включите камеру перед тем, как сделать снимок.");
+          return;
+        }
+
+        // Останавливаем поток камеры
+        const stream = video.srcObject;
+        const tracks = stream.getTracks();
+        tracks.forEach(track => track.stop());
+        video.srcObject = null;
+        isCameraActive = false;
+        captureButton.style.display = 'none';
+        switchCameraButton.style.display = 'none'; // Скрываем кнопку смены камеры
+
+        // Создаем изображение из текущего кадра на холсте
+        img = new Image();
+        img.src = canvas.toDataURL('image/png'); // Преобразуем холст в Data URL
+        img.onload = function () {
+          const maxWidth = window.innerWidth * 0.9;
+          const aspectRatio = img.width / img.height;
+          canvas.width = maxWidth;
+          canvas.height = maxWidth / aspectRatio;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+      }
+
+      // Функция для загрузки изображения
+      document.getElementById('imageInput').addEventListener('change', function (event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            img = new Image();
+            img.src = e.target.result;
+            img.onload = function () {
+              const maxWidth = window.innerWidth * 0.9;
+              const aspectRatio = img.width / img.height;
+              canvas.width = maxWidth;
+              canvas.height = maxWidth / aspectRatio;
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Функция для применения фильтра Canny
+      function applyCanny() {
+        if (!img && !isCameraActive) {
+          alert('Сначала загрузите изображение или включите камеру!');
+          return;
+        }
+        const threshold1 = parseInt(threshold1Input.value);
+        const threshold2 = parseInt(threshold2Input.value);
+        // Создаем временный холст для обработки изображения
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        // Рисуем изображение на временном холсте
+        if (isCameraActive) {
+          tempCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        } else {
+          tempCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+        // Получаем данные изображения
+        const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+        // Создаем матрицу для OpenCV
+        const src = cv.matFromImageData(imageData);
+        const dst = new cv.Mat();
+        // Преобразуем изображение в оттенки серого
+        cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
+        // Применяем фильтр Canny
+        cv.Canny(src, dst, threshold1, threshold2);
+        // Преобразуем результат обратно в формат RGBA
+        const rgbaDst = new cv.Mat();
+        cv.cvtColor(dst, rgbaDst, cv.COLOR_GRAY2RGBA, 0);
+        // Преобразуем результат обратно в изображение
+        const resultImageData = new ImageData(
+          new Uint8ClampedArray(rgbaDst.data),
+          rgbaDst.cols,
+          rgbaDst.rows
+        );
+        // Очищаем основной холст и рисуем результат
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.putImageData(resultImageData, 0, 0);
+        // Освобождаем ресурсы
+        src.delete();
+        dst.delete();
+        rgbaDst.delete();
+      }
       // Функция для смены камеры
       async function switchCamera() {
         if (!isCameraActive) return;
@@ -218,6 +313,71 @@
           loadingSpinner.style.display = 'none';
         }
       }
+
+
+
+
+
+function saveAsSvg() {
+  if (!canvas || !ctx) {
+    alert("Нет данных для сохранения.");
+    return;
+  }
+
+  // Получаем данные изображения с холста
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const src = cv.matFromImageData(imageData);
+  const gray = new cv.Mat();
+  const edges = new cv.Mat();
+  const contours = new cv.MatVector();
+  const hierarchy = new cv.Mat();
+
+  // Преобразуем изображение в оттенки серого
+  cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+
+  // Преобразуем значения порогов в числа
+  const threshold1 = parseInt(threshold1Input.value, 10);
+  const threshold2 = parseInt(threshold2Input.value, 10);
+
+  // Применяем фильтр Canny
+  cv.Canny(gray, edges, threshold1, threshold2);
+
+  // Находим контуры
+  cv.findContours(edges, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+
+  // Создаем SVG-элемент
+  let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}">\n`;
+
+  // Проходим по всем контурам и добавляем их в SVG
+  for (let i = 0; i < contours.size(); i++) {
+    const contour = contours.get(i);
+    svgContent += `<path d="M`;
+    for (let j = 0; j < contour.rows; j++) {
+      const point = contour.data32S.subarray(j * 2, j * 2 + 2);
+      svgContent += `${point[0]} ${point[1]} `;
+      if (j === 0) svgContent += 'L';
+    }
+    svgContent += `" fill="none" stroke="black" stroke-width="1" />\n`;
+  }
+
+  svgContent += `</svg>`;
+
+  // Создаем Blob и ссылку для скачивания
+  const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'canny_edges.svg';
+  a.click();
+  URL.revokeObjectURL(url);
+
+  // Освобождаем ресурсы
+  src.delete();
+  gray.delete();
+  edges.delete();
+  contours.delete();
+  hierarchy.delete();
+}
 
       // Назначаем обработчики событий
       filePickerButton.addEventListener('click', openFilePicker);
