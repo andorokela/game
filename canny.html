@@ -150,33 +150,50 @@
         const input = document.getElementById('imageInput');
         input.click();
       }
-      // Функция для открытия камеры
-      async function openCamera(facingMode = 'environment') {
-        if (isCameraActive) return;
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
-          video.srcObject = stream; // Присваиваем новый поток элементу <video>
-          video.play(); // Запускаем воспроизведение
-          isCameraActive = true;
-          currentStream = stream; // Сохраняем текущий поток
-          captureButton.style.display = 'block';
-          switchCameraButton.style.display = 'block'; // Показываем кнопку смены камеры
-          requestAnimationFrame(drawCameraFrame); // Запускаем отрисовку кадров
-        } catch (error) {
-          alert('Не удалось получить доступ к камере: ' + error.message);
-        }
-      }
-      // Функция для отрисовки кадров с камеры на холсте
-      function drawCameraFrame() {
-        if (!isCameraActive) return;
-        const maxWidth = window.innerWidth * 0.9;
-        const aspectRatio = video.videoWidth / video.videoHeight;
-        canvas.width = maxWidth;
-        canvas.height = maxWidth / aspectRatio;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        requestAnimationFrame(drawCameraFrame);
-      }
+// Функция для открытия камеры
+async function openCamera(facingMode = 'environment') {
+  if (isCameraActive) {
+    // Останавливаем текущий поток камеры
+    currentStream.getTracks().forEach(track => track.stop());
+    isCameraActive = false;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
+    video.srcObject = stream; // Присваиваем новый поток элементу <video>
+    video.play(); // Запускаем воспроизведение
+    isCameraActive = true;
+    currentStream = stream; // Сохраняем текущий поток
+    captureButton.style.display = 'block';
+    switchCameraButton.style.display = 'block'; // Показываем кнопку смены камеры
+    requestAnimationFrame(drawCameraFrame); // Запускаем отрисовку кадров
+  } catch (error) {
+    alert('Не удалось получить доступ к камере: ' + error.message);
+  }
+}
+
+// Функция для отрисовки кадров с камеры на холсте
+function drawCameraFrame() {
+  if (!isCameraActive) return;
+  const maxWidth = window.innerWidth * 0.9;
+  const aspectRatio = video.videoWidth / video.videoHeight;
+  canvas.width = maxWidth;
+  canvas.height = maxWidth / aspectRatio;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  requestAnimationFrame(drawCameraFrame);
+}
+
+// Функция для смены камеры
+async function switchCamera() {
+  if (currentStream) {
+    currentStream.getTracks().forEach(track => track.stop()); // Останавливаем текущий поток
+  }
+  currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment'; // Меняем камеру
+  await openCamera(currentFacingMode); // Открываем новую камеру
+}
+
+// Назначаем обработчики событий
+switchCameraButton.addEventListener('click', switchCamera);
       // Функция для захвата фото с камеры
       function capturePhoto() {
         if (!isCameraActive) return;
@@ -308,12 +325,12 @@
       // Назначаем обработчики событий
       filePickerButton.addEventListener('click', openFilePicker);
       cameraButton.addEventListener('click', () => openCamera(currentFacingMode));
-      switchCameraButton.addEventListener('click', async () => {
+      switchCameraButton.addEventListener('click', () => {
         if (currentStream) {
           currentStream.getTracks().forEach(track => track.stop()); // Останавливаем текущий поток
         }
-        currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment'; // Меняем камеру
-        await openCamera(currentFacingMode); // Открываем новую камеру
+        currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+        openCamera(currentFacingMode); // Переключаем камеру
       });
       captureButton.addEventListener('click', capturePhoto);
       applyCannyButton.addEventListener('click', applyCanny);
