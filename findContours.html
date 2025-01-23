@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Обнаружение контуров с помощью findContours</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 10px;
+      background-color: #f4f4f4;
+    }
+    h1 {
+      font-size: 24px;
+      text-align: center;
+    }
+    canvas {
+      border: 1px solid #000;
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+    .controls {
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .controls label {
+      font-size: 16px;
+    }
+    .controls input[type="range"] {
+      width: 100%;
+    }
+    .controls button {
+      padding: 10px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .controls button:hover {
+      background-color: #0056b3;
+    }
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .slider-container span {
+      font-size: 16px;
+      min-width: 40px;
+      text-align: right;
+    }
+    .file-input-container {
+      display: flex;
+      gap: 10px;
+    }
+    .file-input-container button {
+      flex: 1;
+    }
+    video {
+      display: none; /* Скрываем видеоэлемент */
+    }
+    #captureButton {
+      display: none; /* Скрываем кнопку "Сделать снимок" по умолчанию */
+    }
+    #switchCameraButton {
+      display: none; /* Скрываем кнопку "Сменить камеру" по умолчанию */
+    }
+    .loading-spinner {
+      display: none;
+      font-size: 16px;
+      color: #007bff;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Обнаружение контуров с помощью findContours</h1>
+  <div class="controls">
+    <div class="file-input-container">
+      <button id="filePickerButton">Выбрать файл</button>
+      <button id="cameraButton">Сделать фото</button>
+      <button id="captureButton">Сделать снимок</button>
+      <button id="switchCameraButton">Сменить камеру</button>
+    </div>
+    <input type="file" id="imageInput" accept="image/*" style="display: none;" />
+    <video id="video" autoplay></video>
+    <div class="slider-container">
+      <label for="brightness">Яркость:</label>
+      <input type="range" id="brightness" min="-100" max="100" value="0" />
+      <span id="brightnessValue">0</span>
+    </div>
+    <div class="slider-container">
+      <label for="contrast">Контрастность:</label>
+      <input type="range" id="contrast" min="-100" max="100" value="0" />
+      <span id="contrastValue">0</span>
+    </div>
+    <div class="slider-container">
+      <label for="blur">Размытие:</label>
+      <input type="range" id="blur" min="0" max="10" value="0" />
+      <span id="blurValue">0</span>
+    </div>
+    <div class="slider-container">
+      <label for="threshold">Порог:</label>
+      <input type="range" id="threshold" min="0" max="255" value="128" />
+      <span id="thresholdValue">128</span>
+    </div>
+    <button id="applyContoursButton">Применить findContours</button>
+    <button id="saveSvgButton">Сохранить SVG</button>
+    <div class="loading-spinner" id="loadingSpinner">Переключение камеры...</div>
+  </div>
+  <canvas id="canvas"></canvas>
+  <script src="https://andorokela.github.io/game/opencv.js" type="text/javascript"></script>
+  <script>
+    function onOpenCvReady() {
+      console.log("OpenCV.js загружен и готов к использованию.");
+      initApp();
+    }
+
+    function initApp() {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const video = document.getElementById('video');
+      const captureButton = document.getElementById('captureButton');
+      const filePickerButton = document.getElementById('filePickerButton');
+      const cameraButton = document.getElementById('cameraButton');
+      const switchCameraButton = document.getElementById('switchCameraButton');
+      const applyContoursButton = document.getElementById('applyContoursButton');
+      const saveSvgButton = document.getElementById('saveSvgButton');
+      const loadingSpinner = document.getElementById('loadingSpinner');
+
+      let img;
+      let isCameraActive = false;
+      let currentFacingMode = 'environment';
+      let currentStream = null;
+
+      const thresholdInput = document.getElementById('threshold');
+      const brightnessInput = document.getElementById('brightness');
+      const contrastInput = document.getElementById('contrast');
+      const blurInput = document.getElementById('blur');
+      const thresholdValue = document.getElementById('thresholdValue');
+      const brightnessValue = document.getElementById('brightnessValue');
+      const contrastValue = document.getElementById('contrastValue');
+      const blurValue = document.getElementById('blurValue');
+
+      thresholdInput.addEventListener('input', () => {
+        thresholdValue.textContent = thresholdInput.value;
+        applyContours();
+      });
+
+      brightnessInput.addEventListener('input', () => {
+        brightnessValue.textContent = brightnessInput.value;
+        applyContours();
+      });
+
+      contrastInput.addEventListener('input', () => {
+        contrastValue.textContent = contrastInput.value;
+        applyContours();
+      });
+
+      blurInput.addEventListener('input', () => {
+        blurValue.textContent = blurInput.value;
+        applyContours();
+      });
+
+      function openFilePicker() {
+        const input = document.getElementById('imageInput');
+        input.click();
+      }
+
+      async function openCamera(facingMode) {
+        if (isCameraActive) {
+          currentStream.getTracks().forEach(track => track.stop());
+          isCameraActive = false;
+        }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
+          video.srcObject = stream;
+          video.play();
+          isCameraActive = true;
+          currentStream = stream;
+          currentFacingMode = facingMode;
+          captureButton.style.display = 'block';
+          switchCameraButton.style.display = 'block';
+          requestAnimationFrame(drawCameraFrame);
+        } catch (error) {
+          alert('Не удалось получить доступ к камере: ' + error.message);
+        }
+      }
+
+      function drawCameraFrame() {
+        if (!isCameraActive) return;
+        const maxWidth = window.innerWidth * 0.9;
+        const aspectRatio = video.videoWidth / video.videoHeight;
+        canvas.width = maxWidth;
+        canvas.height = maxWidth / aspectRatio;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        requestAnimationFrame(drawCameraFrame);
+      }
+
+      function capturePhoto() {
+        if (!isCameraActive) {
+          alert("Камера не активна. Включите камеру перед тем, как сделать снимок.");
+          return;
+        }
+        const stream = video.srcObject;
+        const tracks = stream.getTracks();
+        tracks.forEach(track => track.stop());
+        video.srcObject = null;
+        isCameraActive = false;
+        captureButton.style.display = 'none';
+        switchCameraButton.style.display = 'none';
+        img = new Image();
+        img.src = canvas.toDataURL('image/png');
+        img.onload = function () {
+          const maxWidth = window.innerWidth * 0.9;
+          const aspectRatio = img.width / img.height;
+          canvas.width = maxWidth;
+          canvas.height = maxWidth / aspectRatio;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+      }
+
+      document.getElementById('imageInput').addEventListener('change', function (event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            img = new Image();
+            img.src = e.target.result;
+            img.onload = function () {
+              const maxWidth = window.innerWidth * 0.9;
+              const aspectRatio = img.width / img.height;
+              canvas.width = maxWidth;
+              canvas.height = maxWidth / aspectRatio;
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      function applyBrightnessContrast(imageData, brightness, contrast) {
+        const data = imageData.data;
+        const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = factor * (data[i] - 128) + 128 + brightness; // R
+          data[i + 1] = factor * (data[i + 1] - 128) + 128 + brightness; // G
+          data[i + 2] = factor * (data[i + 2] - 128) + 128 + brightness; // B
+        }
+        return imageData;
+      }
+
+      function applyBlur(imageData, blurRadius) {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(imageData, 0, 0);
+
+        if (blurRadius > 0) {
+          tempCtx.filter = `blur(${blurRadius}px)`;
+          tempCtx.drawImage(tempCanvas, 0, 0);
+        }
+
+        return tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+      }
+
+      function applyContours() {
+        if (!img && !isCameraActive) {
+          alert('Сначала загрузите изображение или включите камеру!');
+          return;
+        }
+
+        const threshold = parseInt(thresholdInput.value);
+        const brightness = parseInt(brightnessInput.value);
+        const contrast = parseInt(contrastInput.value);
+        const blurRadius = parseInt(blurInput.value);
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+
+        if (isCameraActive) {
+          tempCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        } else {
+          tempCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+
+        let imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+
+        imageData = applyBrightnessContrast(imageData, brightness, contrast);
+        imageData = applyBlur(imageData, blurRadius);
+
+        const src = cv.matFromImageData(imageData);
+        const gray = new cv.Mat();
+        const binary = new cv.Mat();
+        const contours = new cv.MatVector();
+        const hierarchy = new cv.Mat();
+
+        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+        cv.threshold(gray, binary, threshold, 255, cv.THRESH_BINARY);
+        cv.findContours(binary, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+
+        for (let i = 0; i < contours.size(); i++) {
+          const contour = contours.get(i);
+          ctx.beginPath();
+          for (let j = 0; j < contour.rows; j++) {
+            const point = contour.data32S.subarray(j * 2, j * 2 + 2);
+            if (j === 0) {
+              ctx.moveTo(point[0], point[1]);
+            } else {
+              ctx.lineTo(point[0], point[1]);
+            }
+          }
+          ctx.closePath();
+          ctx.stroke();
+        }
+
+        src.delete();
+        gray.delete();
+        binary.delete();
+        contours.delete();
+        hierarchy.delete();
+      }
+
+      async function switchCamera() {
+        if (!isCameraActive) return;
+        switchCameraButton.disabled = true;
+        loadingSpinner.style.display = 'block';
+        const newFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+        if (currentStream) {
+          currentStream.getTracks().forEach(track => track.stop());
+        }
+        try {
+          await openCamera(newFacingMode);
+        } catch (error) {
+          alert('Ошибка при переключении камеры: ' + error.message);
+        } finally {
+          switchCameraButton.disabled = false;
+          loadingSpinner.style.display = 'none';
+        }
+      }
+
+function saveAsSvg() {
+  if (!canvas || !ctx) {
+    alert("Нет данных для сохранения.");
+    return;
+  }
+
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = canvas.width;
+  tempCanvas.height = canvas.height;
+  const tempCtx = tempCanvas.getContext('2d');
+
+  if (isCameraActive) {
+    tempCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  } else {
+    tempCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  }
+
+  let imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+
+  const brightness = parseInt(brightnessInput.value);
+  const contrast = parseInt(contrastInput.value);
+  const blurRadius = parseInt(blurInput.value);
+  const threshold = parseInt(thresholdInput.value);
+
+  imageData = applyBrightnessContrast(imageData, brightness, contrast);
+  imageData = applyBlur(imageData, blurRadius);
+
+  const src = cv.matFromImageData(imageData);
+  const gray = new cv.Mat();
+  const binary = new cv.Mat();
+  const contours = new cv.MatVector();
+  const hierarchy = new cv.Mat();
+
+  cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+  cv.threshold(gray, binary, threshold, 255, cv.THRESH_BINARY);
+  cv.findContours(binary, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+
+  let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}">\n`;
+
+  for (let i = 0; i < contours.size(); i++) {
+    const contour = contours.get(i);
+    svgContent += `<path d="M`;
+    for (let j = 0; j < contour.rows; j++) {
+      const point = contour.data32S.subarray(j * 2, j * 2 + 2);
+      svgContent += `${point[0]} ${point[1]} `;
+      if (j === 0) svgContent += 'L';
+    }
+    svgContent += `" fill="none" stroke="black" stroke-width="1" />\n`;
+  }
+
+  svgContent += `</svg>`;
+
+  const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'contours.svg';
+  a.click();
+  URL.revokeObjectURL(url);
+
+  src.delete();
+  gray.delete();
+  binary.delete();
+  contours.delete();
+  hierarchy.delete();
+}
+
+      filePickerButton.addEventListener('click', openFilePicker);
+      cameraButton.addEventListener('click', () => openCamera(currentFacingMode));
+      switchCameraButton.addEventListener('click', switchCamera);
+      captureButton.addEventListener('click', capturePhoto);
+      applyContoursButton.addEventListener('click', applyContours);
+      saveSvgButton.addEventListener('click', saveAsSvg);
+    }
+
+    cv['onRuntimeInitialized'] = onOpenCvReady;
+  </script>
+</body>
+</html>
