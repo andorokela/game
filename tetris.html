@@ -19,53 +19,48 @@
     .game-container {
       display: flex;
       align-items: flex-start;
-      width: 100%;
-      max-width: 800px;
-      margin: 0 auto;
+      gap: calc(var(--ui-scale) * 20px); /* Расстояние между игровым полем и информацией */
     }
     canvas {
       background-color: #222;
     }
-    #tetris {
-      width: 80%;
-      height: auto;
-    }
     .info {
-      margin-left: 20px;
       text-align: center;
-      width: 20%;
     }
     .controls {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin-top: 20px;
+      align-items: center;
+      gap: calc(var(--ui-scale) * 10px);
+      margin-top: calc(var(--ui-scale) * 20px);
+    }
+    .control-row {
+      display: flex;
+      justify-content: center;
+      gap: calc(var(--ui-scale) * 10px);
     }
     .controls button {
-      font-size: 20px;
-      padding: 15px;
+      font-size: calc(var(--ui-scale) * 20px);
       background-color: #444;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: calc(var(--ui-scale) * 5px);
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: calc(var(--ui-scale) * 60px); /* Фиксированная ширина для всех кнопок */
+      height: calc(var(--ui-scale) * 60px); /* Фиксированная высота для всех кнопок */
     }
     .controls button:active {
       background-color: #666;
     }
-    .next-shape {
-      margin-top: 20px;
-    }
-    #nextShapeCanvas {
-      width: 60px; /* Размер как у кнопки */
-      height: 60px;
-      background-color: #333;
     }
   </style>
 </head>
 <body>
   <div class="game-container">
-    <canvas id="tetris" width="300" height="600"></canvas>
+    <canvas id="tetris"></canvas>
     <div class="info">
       <h2>Тетрис</h2>
       <p>Очки: <span id="score">0</span></p>
@@ -73,31 +68,53 @@
       <p id="eventMessage" style="color: yellow; display: none;"></p>
       <div class="next-shape">
         <p>Следующая фигура:</p>
-        <canvas id="nextShapeCanvas" width="60" height="60"></canvas>
+        <canvas id="nextShapeCanvas"></canvas>
       </div>
       <div class="controls">
-        <button id="rotate">↑</button>
-        <button id="left">←</button>
-        <button id="right">→</button>
-        <button id="down">↓</button>
+        <div class="control-row">
+          <button id="pause">⏸️</button>
+        </div>
+        <div class="control-row">
+          <button id="left">←</button>
+          <button id="rotate">↻</button>
+          <button id="right">→</button>
+        </div>
+        <div class="control-row">
+          <button id="down">↓</button>
+        </div>
       </div>
     </div>
   </div>
   <script>
+    // Размер клетки (можно изменить)
+    const cellSize = 25;
+
+    // Масштаб интерфейса (можно изменить)
+    const uiScale = 1; // 1 = 100%, 0.5 = 50%, 2 = 200%
+
+    // Применяем масштаб интерфейса через CSS переменную
+    document.documentElement.style.setProperty('--ui-scale', uiScale);
+
+    // Основной холст
     const canvas = document.getElementById('tetris');
     const ctx = canvas.getContext('2d');
+    canvas.width = cellSize * 10; // 10 столбцов
+    canvas.height = cellSize * 20; // 20 строк
+
+    // Холст для следующей фигуры
     const nextShapeCanvas = document.getElementById('nextShapeCanvas');
     const nextShapeCtx = nextShapeCanvas.getContext('2d');
+    nextShapeCanvas.width = cellSize * 4; // Размер для отображения следующей фигуры
+    nextShapeCanvas.height = cellSize * 4;
+
+    // Элементы интерфейса
     const scoreElement = document.getElementById('score');
     const pauseMessage = document.getElementById('pauseMessage');
     const eventMessage = document.getElementById('eventMessage');
 
-    // Масштабирование
-    const scale = 30;
-    const rows = canvas.height / scale;
-    const columns = canvas.width / scale;
-
     // Игровое поле
+    const rows = canvas.height / cellSize;
+    const columns = canvas.width / cellSize;
     let grid = Array.from({ length: rows }, () => Array(columns).fill(0));
 
     // Фигуры и их цвета
@@ -145,34 +162,34 @@
       nextShapeCtx.fillStyle = '#333';
       nextShapeCtx.fillRect(0, 0, nextShapeCanvas.width, nextShapeCanvas.height);
 
-      const centerX = (nextShapeCanvas.width - nextShape.shape[0].length * (scale / 2)) / 2;
-      const centerY = (nextShapeCanvas.height - nextShape.shape.length * (scale / 2)) / 2;
+      const centerX = (nextShapeCanvas.width - nextShape.shape[0].length * cellSize) / 2;
+      const centerY = (nextShapeCanvas.height - nextShape.shape.length * cellSize) / 2;
 
       nextShape.shape.forEach((row, y) => {
         row.forEach((value, x) => {
           if (value) {
-            drawBlock(nextShapeCtx, centerX + x * (scale / 2), centerY + y * (scale / 2), nextShape.color, scale / 2);
+            drawBlock(nextShapeCtx, centerX + x * cellSize, centerY + y * cellSize, nextShape.color, cellSize);
           }
         });
       });
     }
 
     // Отрисовка фигуры с объёмным эффектом
-    function drawBlock(ctx, x, y, color, blockScale = scale) {
+    function drawBlock(ctx, x, y, color, size) {
       const gradient = ctx.createRadialGradient(
-        x + blockScale / 2, y + blockScale / 2, 0,
-        x + blockScale / 2, y + blockScale / 2, blockScale / 2
+        x + size / 2, y + size / 2, 0,
+        x + size / 2, y + size / 2, size / 2
       );
       gradient.addColorStop(0, color);
       gradient.addColorStop(1, '#000');
 
       ctx.fillStyle = gradient;
-      ctx.fillRect(x, y, blockScale, blockScale);
+      ctx.fillRect(x, y, size, size);
 
       // Тень
       ctx.strokeStyle = '#000';
       ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, blockScale, blockScale);
+      ctx.strokeRect(x, y, size, size);
     }
 
     // Отрисовка фигуры
@@ -180,7 +197,7 @@
       currentShape.forEach((row, y) => {
         row.forEach((value, x) => {
           if (value) {
-            drawBlock(ctx, (currentPosition.x + x) * scale, (currentPosition.y + y) * scale, currentColor);
+            drawBlock(ctx, (currentPosition.x + x) * cellSize, (currentPosition.y + y) * cellSize, currentColor, cellSize);
           }
         });
       });
@@ -191,7 +208,7 @@
       grid.forEach((row, y) => {
         row.forEach((value, x) => {
           if (value) {
-            drawBlock(ctx, x * scale, y * scale, value);
+            drawBlock(ctx, x * cellSize, y * cellSize, value, cellSize);
           }
         });
       });
@@ -261,7 +278,7 @@
         // Затемнение удаляемых строк
         ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
         linesToClear.forEach(y => {
-          ctx.fillRect(0, y * scale, canvas.width, scale);
+          ctx.fillRect(0, y * cellSize, canvas.width, cellSize);
         });
 
         opacity -= 0.05;
@@ -352,6 +369,10 @@
     });
     document.getElementById('down').addEventListener('click', () => {
       drop();
+    });
+    document.getElementById('pause').addEventListener('click', () => {
+      isPaused = !isPaused;
+      pauseMessage.style.display = isPaused ? 'block' : 'none';
     });
 
     // Движение фигуры вниз
