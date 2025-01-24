@@ -10,7 +10,7 @@
       overflow: hidden;
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start; /* Привязка к верху */
       height: 100vh;
       background-color: #000;
       font-family: Arial, sans-serif;
@@ -18,8 +18,9 @@
     }
     .game-container {
       display: flex;
-      align-items: flex-start;
+      align-items: flex-start; /* Привязка к верху */
       gap: calc(var(--ui-scale) * 20px); /* Расстояние между игровым полем и информацией */
+      margin-top: calc(var(--ui-scale) * 20px); /* Отступ сверху */
     }
     canvas {
       background-color: #222;
