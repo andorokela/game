@@ -55,6 +55,32 @@
     .controls button:active {
       background-color: #666;
     }
+    .bottom-controls {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      padding: calc(var(--ui-scale) * 10px);
+      box-sizing: border-box;
+    }
+    .bottom-controls button {
+      flex: 1;
+      margin: 0 calc(var(--ui-scale) * 5px);
+      font-size: calc(var(--ui-scale) * 20px);
+      background-color: #444;
+      color: white;
+      border: none;
+      border-radius: calc(var(--ui-scale) * 5px);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: calc(var(--ui-scale) * 60px);
+    }
+    .bottom-controls button:active {
+      background-color: #666;
     }
   </style>
 </head>
@@ -75,22 +101,22 @@
           <button id="pause">⏸️</button>
         </div>
         <div class="control-row">
-          <button id="left">←</button>
-          <button id="rotate">↻</button>
-          <button id="right">→</button>
-        </div>
-        <div class="control-row">
           <button id="down">↓</button>
         </div>
       </div>
     </div>
+  </div>
+  <div class="bottom-controls">
+    <button id="left">←</button>
+    <button id="rotate">↻</button>
+    <button id="right">→</button>
   </div>
   <script>
     // Размер клетки (можно изменить)
     const cellSize = 25;
 
     // Масштаб интерфейса (можно изменить)
-    const uiScale = 0.5; // 1 = 100%, 0.5 = 50%, 2 = 200%
+    const uiScale = 1; // 1 = 100%, 0.5 = 50%, 2 = 200%
 
     // Применяем масштаб интерфейса через CSS переменную
     document.documentElement.style.setProperty('--ui-scale', uiScale);
