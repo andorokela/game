@@ -1,0 +1,72 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 10px;
+  background-color: #f9f9f9;
+}
+
+.container {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.column {
+  flex: 1;
+  padding: 10px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.canvas-column {
+  flex: 0 0 400px; /* Фиксированная ширина для холста */
+}
+
+.controls-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.control-group label {
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.range-container {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.range-container input {
+  flex-grow: 1;
+}
+
+.range-container .min,
+.range-container .max {
+  font-size: 10px;
+  color: #666;
+}
+
+.value-display {
+  text-align: center;
+  font-size: 12px;
+  color: #333;
+}
+
+canvas {
+  border: 1px solid #000;
+  display: block;
+  margin: 0 auto;
+}
+.pitch-type {
+    
+}
