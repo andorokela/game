@@ -70,3 +70,8 @@ canvas {
 .pitch-type {
     
 }
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #666; /* Цвет флажка */
+  }
