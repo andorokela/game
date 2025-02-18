@@ -91,7 +91,7 @@ function updateCdDependentSliders() {
   updateFabValue();
   updateBsValue();
   updateBtValue();
-  updateTdMax();
+  updateTdValue();
 }
 
 // Обновление FAB
@@ -116,9 +116,10 @@ function updateBtValue() {
 }
 
 // Обновление максимального значения TD
-function updateTdMax() {
+function updateTdValue() {
   const bpp = parseFloat(sliders.bpp.value);
   const wd = parseFloat(sliders.wd.value);
+  const cd = parseFloat(sliders.cd.value);
   const ca = (parseFloat(sliders.ca.value) * Math.PI) / 180;
   const lh = 100; // Примерное значение LH (длина провода)
   const bh = 50; // Примерное значение BH (высота шарика)
@@ -126,6 +127,10 @@ function updateTdMax() {
   document.getElementById("bppValue").textContent = `${bpp.toFixed(2)} μm`;
   document.getElementById("tdMax").textContent = `${tdMax.toFixed(2)} μm`;
   sliders.td.max = tdMax;
+  if (parseFloat(sliders.td.min) < 2 * cd + 3) {
+    sliders.td.min = cd + 3;
+    document.getElementById("tdMin").textContent = `${(2 * cd + 3).toFixed(2)} μm`;
+  }
   if (parseFloat(sliders.td.value) > tdMax) {
     sliders.td.value = tdMax;
     document.getElementById("tdValue").textContent = `${tdMax.toFixed(2)} μm`;
@@ -166,12 +171,37 @@ function drawCapillary() {
     -parseFloat(sliders.cd.value),
     -parseFloat(sliders.td.value),
     ((360 - parseFloat(sliders.ica.value)) * Math.PI) / 180,
-    ((180 - parseFloat(sliders.fa.value)) * Math.PI) / 180,
+    ((-parseFloat(sliders.fa.value)) * Math.PI) / 180,
     parseFloat(sliders.or.value),
     (-parseFloat(sliders.ca.value) * Math.PI) / 180
   );
+
+    // Ширина прямоугольника
+  const wd = parseFloat(sliders.wd.value);
+  const rectangleWidth = wd;
+  const rectangleHeight = centerY+50; // Фиксированная высота прямоугольника
+
+  // Координаты прямоугольника
+  const rectLeft = centerX - rectangleWidth / 2;
+  const rectTop = 20;
+
+  // Отрисовка прямоугольника
+  ctx.fillStyle = "yellow"; // Желтый цвет
+  ctx.fillRect(rectLeft, rectTop, rectangleWidth, rectangleHeight);
+
+  // Добавляем обводку для наглядности
+  ctx.strokeStyle = "black";
+  ctx.strokeRect(rectLeft, rectTop, rectangleWidth, rectangleHeight);
+  
   // Отрисовка шарика
-  drawBall(centerX, centerY); //, parseFloat(sliders.hd.value), parseFloat(sliders.cd.value), parseFloat(sliders.fab.value));
+  const showBall = document.getElementById("showBall");
+  if (showBall.checked) {
+    drawBall(centerX, centerY);
+  } else {
+    drawBondBall(centerX, centerY);
+  }
+  drawBondBall(centerX+parseFloat(sliders.bpp.value), centerY);
+  drawBondBall(centerX-parseFloat(sliders.bpp.value), centerY);
 }
 
 // Отрисовка фигуры
@@ -262,23 +292,6 @@ function drawBall(centerX, centerY) {
   const tangentPointX = intersectionX + ballRadius * Math.cos(angleBC);
   const tangentPointY = intersectionY + ballRadius * Math.sin(angleBC);
 
-  // Ширина прямоугольника
-  const wd = parseFloat(sliders.wd.value);
-  const rectangleWidth = wd;
-  const rectangleHeight = ballCenterY-20; // Фиксированная высота прямоугольника
-
-  // Координаты прямоугольника
-  const rectLeft = centerX - rectangleWidth / 2;
-  const rectTop = 20;
-
-  // Отрисовка прямоугольника
-  ctx.fillStyle = "yellow"; // Желтый цвет
-  ctx.fillRect(rectLeft, rectTop, rectangleWidth, rectangleHeight);
-
-  // Добавляем обводку для наглядности
-  ctx.strokeStyle = "black";
-  ctx.strokeRect(rectLeft, rectTop, rectangleWidth, rectangleHeight);
-
   // Отрисовка шарика
   ctx.fillStyle = "yellow";
   ctx.beginPath();
@@ -293,13 +306,172 @@ function drawBall(centerX, centerY) {
   const line3y2 = ballCenterY + Math.sin(normalAngle) * canvas.height;
 }
 
+function drawBondBall(centerX, centerY) {
+  // Точки B и C для первой фигуры
+  const bX = centerX + parseFloat(sliders.hd.value) / 2;
+  const mbX = centerX - parseFloat(sliders.hd.value) / 2;
+  const bY = centerY + 50;
+  const cX = centerX + parseFloat(sliders.cd.value) / 2;
+  const mcX = centerX - parseFloat(sliders.cd.value) / 2;
+  const cY =
+    bY + (parseFloat(sliders.cd.value) / 2) * Math.sin((Math.PI - (parseFloat(sliders.ica.value) * Math.PI) / 180) / 2);
+  // Точка D
+  const dX = centerX + parseFloat(sliders.td.value) / 2;
+  const dY = cY - parseFloat(sliders.td.value)/2 *Math.tan(parseFloat(sliders.fa.value)* Math.PI / 180);
+  
+  // Радиус шарика
+  const ballRadius = parseFloat(sliders.fab.value) * parseFloat(sliders.cd.value) * 0.5;
+
+
+  ctx.fillStyle = "yellow";
+  ctx.beginPath();
+  ctx.lineTo(bX, bY);
+  ctx.lineTo(cX, cY);
+  ctx.lineTo(mcX, cY);
+  ctx.lineTo(mbX, bY);
+  ctx.lineTo(bX, bY);
+  ctx.fill();
+  ctx.stroke();
+
+  // Вычисление площади
+
+const trapArea = (cY-bY)*((bX-centerX)+(cX-centerX));
+
+
+  
+  // Линия CD
+  const line2x1 = cX;
+  const line2y1 = cY;
+  const line2x2 = dX;
+  const line2y2 = dY;
+
+  // Вертикальная линия через centerX
+  const line1x1 = centerX+parseFloat(sliders.bs.value)*parseFloat(sliders.cd.value)/2;
+  const line1y1 = 0; // Начало линии (верхний край холста)
+  const line1x2 = line1x1;
+  const line1y2 = canvas.height; // Конец линии (нижний край холста)
+
+  // Пересечение вертикальной линии с отрезком CD
+  const intersection = lineIntersection(line1x1, line1y1, line1x2, line1y2, line2x1, line2y1, line2x2, line2y2);
+
+  if (!intersection) return;
+
+  // Точка пересечения
+  const intersectionX = intersection.x;
+  const intersectionY = intersection.y;  
+
+// Отрисовка нижней части
+ctx.fillStyle = "yellow";
+ctx.beginPath();
+ctx.lineTo(cX, cY);
+ctx.lineTo(intersectionX, intersectionY);
+
+// Радиус дуги
+const arcR = (cY + (parseFloat(sliders.bt.value) * parseFloat(sliders.cd.value)) - intersectionY) / 2;
+const arcY = intersectionY + arcR;
+
+// Дуга справа
+ctx.arc(intersectionX, arcY, arcR, 3 * Math.PI / 2, Math.PI / 2);
+
+// Левая зеркальная часть
+const x = 2*centerX - intersectionX;
+ctx.lineTo(x, arcY + arcR);
+ctx.arc(x, arcY, arcR, Math.PI / 2, 3 * Math.PI / 2);
+
+// Замыкание пути
+ctx.lineTo(2 * centerX - cX, cY);
+ctx.fill();
+ctx.stroke();
+
+// Расчет площади
+// 1. Площадь треугольника
+const triangleBase = cY-intersectionY; // Расстояние между (cX, cY) и (intersectionX, intersectionY)
+const triangleHeight = intersectionX-cX; // Высота треугольника
+const triangleArea = 0.5 * triangleBase * triangleHeight;
+
+// 2. Площадь двух полукругов
+const semicircleArea = Math.PI * Math.pow(arcR, 2)/2; // Площадь одного полукруга умножаем на 2
+const osn = 2*(parseFloat(sliders.bt.value) * parseFloat(sliders.cd.value)*(intersectionX-centerX));
+// Общая площадь
+const totalArea = 2*triangleArea + semicircleArea + osn;
+  const t = triangleBase;
+  //console.log("t:", t.toFixed(2), "квадратных единиц");
+  
+const ballArea =
+  (Math.PI *
+    (parseFloat(sliders.cd.value) * parseFloat(sliders.fab.value)) *
+    (parseFloat(sliders.cd.value) * parseFloat(sliders.fab.value))) /
+  4;
+const rectangleWidth = parseFloat(sliders.hd.value);
+const rectangleHeight = (ballArea - totalArea-trapArea) / rectangleWidth;
+  // Отрисовка шапочки
+ctx.fillStyle = "yellow";
+ctx.beginPath();
+//ctx.lineTo(bX, bY);
+  const rectLeft =2 * centerX - bX;
+  const rectTop = bY-rectangleHeight;
+
+
+  ctx.fillStyle = "yellow"; // Желтый цвет
+  ctx.fillRect(rectLeft, rectTop, rectangleWidth, rectangleHeight);
+    //// Добавляем обводку для наглядности
+  ctx.strokeStyle = "black";
+  ctx.strokeRect(rectLeft, rectTop, rectangleWidth, rectangleHeight);
+  ctx.fill();
+  ctx.stroke();
+  
+  //console.log("Площадь шара:", ballArea.toFixed(2), "квадратных единиц");
+  //console.log("Площадь низа:", totalArea.toFixed(2), "квадратных единиц");
+  //console.log("Площадь трапеции:", trapArea.toFixed(2), "квадратных единиц");
+  //console.log("Площадь шара:", ballArea.toFixed(2), "квадратных единиц");
+  //
+    //// Отрисовка точки
+  //ctx.fillStyle = "blue";
+  //ctx.beginPath();
+  //ctx.arc(cX, cY, 5, 0, 2 * Math.PI);
+  //ctx.fill();
+  //ctx.stroke();
+  
+  //// Отрисовка прямоугольника
+  //const rectLeft =intersectionX;
+  //const rectTop = intersectionY;
+  //const rectangleWidth = parseFloat(sliders.bs.value)*parseFloat(sliders.cd.value);
+  //const rectangleHeight = parseFloat(sliders.bt.value)*parseFloat(sliders.cd.value);
+  //ctx.fillStyle = "yellow"; // Желтый цвет
+  //ctx.fillRect(rectLeft, rectTop, rectangleWidth, rectangleHeight);
+
+
+  //// Добавляем обводку для наглядности
+  //ctx.strokeStyle = "black";
+  //ctx.strokeRect(intersectionX, intersectionY, 5, 5);
+  //ctx.fill();
+  //ctx.stroke();
+  
+  //// Отрисовка шарика
+  //ctx.fillStyle = "yellow";
+  //ctx.beginPath();
+  //ctx.arc(ballCenterX, ballCenterY, ballRadius, 0, 2 * Math.PI);
+  //ctx.fill();
+  //ctx.stroke();
+  //
+  //// Линия, проходящая через центр шарика перпендикулярно BC
+  //const line3x1 = ballCenterX - Math.cos(normalAngle) * canvas.height; // Начало линии
+  //const line3y1 = ballCenterY - Math.sin(normalAngle) * canvas.height;
+  //const line3x2 = ballCenterX + Math.cos(normalAngle) * canvas.height; // Конец линии
+  //const line3y2 = ballCenterY + Math.sin(normalAngle) * canvas.height;
+}
+
 // Вычисление точек для фигуры
 function computeFigurePoints(centerX, centerY, hd, cd, td, ica, fa, or, ca) {
   const border = 20;
 
   // Точки A, B
-  const aX = centerX + hd / 2;
-  const bX = aX;
+    // Для зеркальной фигуры изменяем направление углов и нормалей
+  const isMirror = hd < 0; // Определяем, является ли фигура зеркальной
+  const mirrorFactor = isMirror ? -1 : 1;
+  
+  const bX = centerX + hd / 2;
+  const aX = bX + (7 * mirrorFactor) ;
   const bY = centerY + 50;
 
   // Точка C
@@ -308,7 +480,7 @@ function computeFigurePoints(centerX, centerY, hd, cd, td, ica, fa, or, ca) {
 
   // Точка D
   const dX = centerX + td / 2;
-  const dY = cY - 50 * Math.sin(fa);
+  const dY =  cY - td/2 * fa;
 
   // Точка F
   const lengthEF = centerY; // Длина отрезка EF
@@ -320,9 +492,7 @@ function computeFigurePoints(centerX, centerY, hd, cd, td, ica, fa, or, ca) {
   const angleCD = Math.atan2(dY - cY, dX - cX);
   const angleDE = Math.atan2(fY - dY, fX - dX);
 
-  // Для зеркальной фигуры изменяем направление углов и нормалей
-  const isMirror = hd < 0; // Определяем, является ли фигура зеркальной
-  const mirrorFactor = isMirror ? -1 : 1;
+
 
   const adjustedAngleCD = mirrorFactor * angleCD;
   const adjustedAngleDE = mirrorFactor * angleDE;
