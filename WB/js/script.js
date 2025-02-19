@@ -13,7 +13,8 @@ const sliders = {
   ica: document.getElementById("icaSlider"),
   fa: document.getElementById("faSlider"),
   or: document.getElementById("orSlider"),
-  ca: document.getElementById("caSlider")
+  ca: document.getElementById("caSlider"),
+  lh: document.getElementById("lhSlider")
 };
 
 // Инициализация
@@ -115,14 +116,21 @@ function updateBtValue() {
   document.getElementById("btValue").textContent = `${bt.toFixed(2)} μm`;
 }
 
+// Обновление LH
+function updateLhValue() {
+  const td = parseFloat(sliders.td.value);
+  const lh = parseFloat(sliders.lh.value) * cd;
+  document.getElementById("lhValue").textContent = `${lh.toFixed(2)} μm`;
+}
+
 // Обновление максимального значения TD
 function updateTdValue() {
   const bpp = parseFloat(sliders.bpp.value);
   const wd = parseFloat(sliders.wd.value);
   const cd = parseFloat(sliders.cd.value);
   const ca = (parseFloat(sliders.ca.value) * Math.PI) / 180;
-  const lh = 100; // Примерное значение LH (длина провода)
-  const bh = 50; // Примерное значение BH (высота шарика)
+  const lh = parseFloat(sliders.lh.value); // Примерное значение LH (длина провода)
+  const bh = parseFloat(sliders.bt.value) * parseFloat(sliders.cd.value); // Примерное значение BH (высота шарика)
   const tdMax = 2 * (bpp - wd / 2 - Math.tan(ca / 2) * (lh - bh));
   document.getElementById("bppValue").textContent = `${bpp.toFixed(2)} μm`;
   document.getElementById("tdMax").textContent = `${tdMax.toFixed(2)} μm`;
@@ -171,15 +179,15 @@ function drawCapillary() {
     -parseFloat(sliders.cd.value),
     -parseFloat(sliders.td.value),
     ((360 - parseFloat(sliders.ica.value)) * Math.PI) / 180,
-    ((-parseFloat(sliders.fa.value)) * Math.PI) / 180,
+    (-parseFloat(sliders.fa.value) * Math.PI) / 180,
     parseFloat(sliders.or.value),
     (-parseFloat(sliders.ca.value) * Math.PI) / 180
   );
 
-    // Ширина прямоугольника
+  // Ширина прямоугольника
   const wd = parseFloat(sliders.wd.value);
   const rectangleWidth = wd;
-  const rectangleHeight = centerY+50; // Фиксированная высота прямоугольника
+  const rectangleHeight = centerY + 30; // Фиксированная высота прямоугольника
 
   // Координаты прямоугольника
   const rectLeft = centerX - rectangleWidth / 2;
@@ -192,7 +200,7 @@ function drawCapillary() {
   // Добавляем обводку для наглядности
   ctx.strokeStyle = "black";
   ctx.strokeRect(rectLeft, rectTop, rectangleWidth, rectangleHeight);
-  
+
   // Отрисовка шарика
   const showBall = document.getElementById("showBall");
   if (showBall.checked) {
@@ -200,8 +208,37 @@ function drawCapillary() {
   } else {
     drawBondBall(centerX, centerY);
   }
-  drawBondBall(centerX+parseFloat(sliders.bpp.value), centerY);
-  drawBondBall(centerX-parseFloat(sliders.bpp.value), centerY);
+  drawLoop(centerX + parseFloat(sliders.bpp.value), centerY);
+  drawBondBall(centerX + parseFloat(sliders.bpp.value), centerY);
+
+
+  drawLoop(centerX - parseFloat(sliders.bpp.value), centerY);
+  drawBondBall(centerX - parseFloat(sliders.bpp.value), centerY);
+}
+
+function drawLoop(centerX, centerY) {
+  // Ширина прямоугольника
+  const wd = parseFloat(sliders.wd.value);
+  const rectangleWidth = wd;
+  const rectangleHeight = parseFloat(sliders.lh.value); // Фиксированная высота прямоугольника
+
+  // Координаты прямоугольника
+  const rectLeft = centerX - rectangleWidth / 2; //Math.tan(parseFloat(sliders.lh.value)*Math.PI/180)*parseFloat(sliders.cd.value)/2
+  const rectTop =
+    50 +
+    centerY -
+    parseFloat(sliders.lh.value) +
+    ((parseFloat(sliders.cd.value) - parseFloat(sliders.hd.value)) / 2) *
+      Math.tan((Math.PI/2 - (parseFloat(sliders.ica.value) * Math.PI) / 180) / 2) + 
+        parseFloat(sliders.bt.value)*parseFloat(sliders.cd.value);//;
+
+  // Отрисовка прямоугольника
+  ctx.fillStyle = "yellow"; // Желтый цвет
+  ctx.fillRect(rectLeft, rectTop, rectangleWidth, rectangleHeight);
+
+  // Добавляем обводку для наглядности
+  ctx.strokeStyle = "black";
+  ctx.strokeRect(rectLeft, rectTop, rectangleWidth, rectangleHeight);
 }
 
 // Отрисовка фигуры
@@ -249,7 +286,9 @@ function drawBall(centerX, centerY) {
   const bY = centerY + 50;
   const cX = centerX + parseFloat(sliders.cd.value) / 2;
   const cY =
-    bY + (parseFloat(sliders.cd.value) / 2) * Math.sin((Math.PI - (parseFloat(sliders.ica.value) * Math.PI) / 180) / 2);
+    bY +
+    ((parseFloat(sliders.cd.value) - parseFloat(sliders.hd.value)) / 2) *
+      Math.tan((Math.PI - (parseFloat(sliders.ica.value) * Math.PI / 180))/2);
 
   // Угол наклона отрезка BC
   const angleBC = Math.atan2(cY - bY, cX - bX);
@@ -314,14 +353,15 @@ function drawBondBall(centerX, centerY) {
   const cX = centerX + parseFloat(sliders.cd.value) / 2;
   const mcX = centerX - parseFloat(sliders.cd.value) / 2;
   const cY =
-    bY + (parseFloat(sliders.cd.value) / 2) * Math.sin((Math.PI - (parseFloat(sliders.ica.value) * Math.PI) / 180) / 2);
+    bY +
+    ((parseFloat(sliders.cd.value) - parseFloat(sliders.hd.value)) / 2) *
+      Math.tan((Math.PI - (parseFloat(sliders.ica.value) * Math.PI) / 180) / 2);
   // Точка D
   const dX = centerX + parseFloat(sliders.td.value) / 2;
-  const dY = cY - parseFloat(sliders.td.value)/2 *Math.tan(parseFloat(sliders.fa.value)* Math.PI / 180);
-  
+  const dY = cY - (parseFloat(sliders.td.value) / 2) * Math.tan((parseFloat(sliders.fa.value) * Math.PI) / 180);
+
   // Радиус шарика
   const ballRadius = parseFloat(sliders.fab.value) * parseFloat(sliders.cd.value) * 0.5;
-
 
   ctx.fillStyle = "yellow";
   ctx.beginPath();
@@ -335,10 +375,8 @@ function drawBondBall(centerX, centerY) {
 
   // Вычисление площади
 
-const trapArea = (cY-bY)*((bX-centerX)+(cX-centerX));
+  const trapArea = (cY - bY) * (bX - centerX + (cX - centerX));
 
-
-  
   // Линия CD
   const line2x1 = cX;
   const line2y1 = cY;
@@ -346,7 +384,7 @@ const trapArea = (cY-bY)*((bX-centerX)+(cX-centerX));
   const line2y2 = dY;
 
   // Вертикальная линия через centerX
-  const line1x1 = centerX+parseFloat(sliders.bs.value)*parseFloat(sliders.cd.value)/2;
+  const line1x1 = centerX + (parseFloat(sliders.bs.value) * parseFloat(sliders.cd.value)) / 2;
   const line1y1 = 0; // Начало линии (верхний край холста)
   const line1x2 = line1x1;
   const line1y2 = canvas.height; // Конец линии (нижний край холста)
@@ -358,80 +396,79 @@ const trapArea = (cY-bY)*((bX-centerX)+(cX-centerX));
 
   // Точка пересечения
   const intersectionX = intersection.x;
-  const intersectionY = intersection.y;  
+  const intersectionY = intersection.y;
 
-// Отрисовка нижней части
-ctx.fillStyle = "yellow";
-ctx.beginPath();
-ctx.lineTo(cX, cY);
-ctx.lineTo(intersectionX, intersectionY);
+  // Отрисовка нижней части
+  ctx.fillStyle = "yellow";
+  ctx.beginPath();
+  ctx.lineTo(cX, cY);
+  ctx.lineTo(intersectionX, intersectionY);
 
-// Радиус дуги
-const arcR = (cY + (parseFloat(sliders.bt.value) * parseFloat(sliders.cd.value)) - intersectionY) / 2;
-const arcY = intersectionY + arcR;
+  // Радиус дуги
+  const arcR = (cY + parseFloat(sliders.bt.value) * parseFloat(sliders.cd.value) - intersectionY) / 2;
+  const arcY = intersectionY + arcR;
 
-// Дуга справа
-ctx.arc(intersectionX, arcY, arcR, 3 * Math.PI / 2, Math.PI / 2);
+  // Дуга справа
+  ctx.arc(intersectionX, arcY, arcR, (3 * Math.PI) / 2, Math.PI / 2);
 
-// Левая зеркальная часть
-const x = 2*centerX - intersectionX;
-ctx.lineTo(x, arcY + arcR);
-ctx.arc(x, arcY, arcR, Math.PI / 2, 3 * Math.PI / 2);
+  // Левая зеркальная часть
+  const x = 2 * centerX - intersectionX;
+  ctx.lineTo(x, arcY + arcR);
+  ctx.arc(x, arcY, arcR, Math.PI / 2, (3 * Math.PI) / 2);
 
-// Замыкание пути
-ctx.lineTo(2 * centerX - cX, cY);
-ctx.fill();
-ctx.stroke();
+  // Замыкание пути
+  ctx.lineTo(2 * centerX - cX, cY);
+  ctx.fill();
+  ctx.stroke();
 
-// Расчет площади
-// 1. Площадь треугольника
-const triangleBase = cY-intersectionY; // Расстояние между (cX, cY) и (intersectionX, intersectionY)
-const triangleHeight = intersectionX-cX; // Высота треугольника
-const triangleArea = 0.5 * triangleBase * triangleHeight;
+  // Расчет площади
+  // 1. Площадь треугольника
+  const triangleBase = cY - intersectionY; // Расстояние между (cX, cY) и (intersectionX, intersectionY)
+  const triangleHeight = intersectionX - cX; // Высота треугольника
+  const triangleArea = 0.5 * triangleBase * triangleHeight;
 
-// 2. Площадь двух полукругов
-const semicircleArea = Math.PI * Math.pow(arcR, 2)/2; // Площадь одного полукруга умножаем на 2
-const osn = 2*(parseFloat(sliders.bt.value) * parseFloat(sliders.cd.value)*(intersectionX-centerX));
-// Общая площадь
-const totalArea = 2*triangleArea + semicircleArea + osn;
+  // 2. Площадь двух полукругов
+  const semicircleArea = (Math.PI * Math.pow(arcR, 2)) / 2; // Площадь одного полукруга умножаем на 2
+  const osn = 2 * (parseFloat(sliders.bt.value) * parseFloat(sliders.cd.value) * (intersectionX - centerX));
+  // Общая площадь
+  const totalArea = 2 * triangleArea + semicircleArea + osn;
   const t = triangleBase;
   //console.log("t:", t.toFixed(2), "квадратных единиц");
-  
-const ballArea =
-  (Math.PI *
-    (parseFloat(sliders.cd.value) * parseFloat(sliders.fab.value)) *
-    (parseFloat(sliders.cd.value) * parseFloat(sliders.fab.value))) /
-  4;
-const rectangleWidth = parseFloat(sliders.hd.value);
-const rectangleHeight = (ballArea - totalArea-trapArea) / rectangleWidth;
-  // Отрисовка шапочки
-ctx.fillStyle = "yellow";
-ctx.beginPath();
-//ctx.lineTo(bX, bY);
-  const rectLeft =2 * centerX - bX;
-  const rectTop = bY-rectangleHeight;
 
+  const ballArea =
+    (Math.PI *
+      (parseFloat(sliders.cd.value) * parseFloat(sliders.fab.value)) *
+      (parseFloat(sliders.cd.value) * parseFloat(sliders.fab.value))) /
+    4;
+  const rectangleWidth = parseFloat(sliders.hd.value);
+  const rectangleHeight = (ballArea - totalArea - trapArea) / rectangleWidth;
+  // Отрисовка шапочки
+  ctx.fillStyle = "yellow";
+  ctx.beginPath();
+  //ctx.lineTo(bX, bY);
+  const rectLeft = 2 * centerX - bX;
+  const rectTop = bY - rectangleHeight;
 
   ctx.fillStyle = "yellow"; // Желтый цвет
   ctx.fillRect(rectLeft, rectTop, rectangleWidth, rectangleHeight);
-    //// Добавляем обводку для наглядности
+  //// Добавляем обводку для наглядности
   ctx.strokeStyle = "black";
   ctx.strokeRect(rectLeft, rectTop, rectangleWidth, rectangleHeight);
   ctx.fill();
   ctx.stroke();
-  
+
   //console.log("Площадь шара:", ballArea.toFixed(2), "квадратных единиц");
   //console.log("Площадь низа:", totalArea.toFixed(2), "квадратных единиц");
   //console.log("Площадь трапеции:", trapArea.toFixed(2), "квадратных единиц");
   //console.log("Площадь шара:", ballArea.toFixed(2), "квадратных единиц");
   //
-    //// Отрисовка точки
+  //// Отрисовка точки
   //ctx.fillStyle = "blue";
   //ctx.beginPath();
   //ctx.arc(cX, cY, 5, 0, 2 * Math.PI);
   //ctx.fill();
   //ctx.stroke();
-  
+
   //// Отрисовка прямоугольника
   //const rectLeft =intersectionX;
   //const rectTop = intersectionY;
@@ -440,13 +477,12 @@ ctx.beginPath();
   //ctx.fillStyle = "yellow"; // Желтый цвет
   //ctx.fillRect(rectLeft, rectTop, rectangleWidth, rectangleHeight);
 
-
   //// Добавляем обводку для наглядности
   //ctx.strokeStyle = "black";
   //ctx.strokeRect(intersectionX, intersectionY, 5, 5);
   //ctx.fill();
   //ctx.stroke();
-  
+
   //// Отрисовка шарика
   //ctx.fillStyle = "yellow";
   //ctx.beginPath();
@@ -466,21 +502,21 @@ function computeFigurePoints(centerX, centerY, hd, cd, td, ica, fa, or, ca) {
   const border = 20;
 
   // Точки A, B
-    // Для зеркальной фигуры изменяем направление углов и нормалей
+  // Для зеркальной фигуры изменяем направление углов и нормалей
   const isMirror = hd < 0; // Определяем, является ли фигура зеркальной
   const mirrorFactor = isMirror ? -1 : 1;
-  
+
   const bX = centerX + hd / 2;
-  const aX = bX + (7 * mirrorFactor) ;
+  const aX = bX + 7 * mirrorFactor;
   const bY = centerY + 50;
 
   // Точка C
   const cX = centerX + cd / 2;
-  const cY = bY + (cd / 2) * Math.sin((Math.PI - ica) / 2);
+  const cY = bY + ((cd - hd) / 2) * Math.tan((Math.PI - ica) / 2);
 
   // Точка D
   const dX = centerX + td / 2;
-  const dY =  cY - td/2 * fa;
+  const dY = cY - (td / 2) * fa;
 
   // Точка F
   const lengthEF = centerY; // Длина отрезка EF
@@ -491,8 +527,6 @@ function computeFigurePoints(centerX, centerY, hd, cd, td, ica, fa, or, ca) {
   // Углы наклона отрезков CD и DE
   const angleCD = Math.atan2(dY - cY, dX - cX);
   const angleDE = Math.atan2(fY - dY, fX - dX);
-
-
 
   const adjustedAngleCD = mirrorFactor * angleCD;
   const adjustedAngleDE = mirrorFactor * angleDE;
