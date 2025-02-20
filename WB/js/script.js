@@ -39,6 +39,7 @@ function setupEventListeners() {
 function updateValues() {
   updateWdAndHd();
   updateCdDependentSliders();
+  updateLhValue();
 }
 
 function updateValue(id, value) {
@@ -93,6 +94,7 @@ function updateCdDependentSliders() {
   updateBsValue();
   updateBtValue();
   updateTdValue();
+  updateLhValue();
 }
 
 // Обновление FAB
@@ -100,6 +102,7 @@ function updateFabValue() {
   const cd = parseFloat(sliders.cd.value);
   const fab = parseFloat(sliders.fab.value) * cd;
   document.getElementById("fabValue").textContent = `${fab.toFixed(2)} μm`;
+  updateLhValue();
 }
 
 // Обновление BS
@@ -119,8 +122,10 @@ function updateBtValue() {
 // Обновление LH
 function updateLhValue() {
   const td = parseFloat(sliders.td.value);
-  const lh = parseFloat(sliders.lh.value) * cd;
-  document.getElementById("lhValue").textContent = `${lh.toFixed(2)} μm`;
+ // const lh = parseFloat(sliders.lh.value) * cd;
+  const lhmin = 2.75 * parseFloat(sliders.fab.value) * parseFloat(sliders.cd.value);
+//  document.getElementById("lhValue").textContent = `${lh.toFixed(2)} μm`;
+  document.getElementById("lhMin").textContent = `${lhmin.toFixed(2)} μm`;
 }
 
 // Обновление максимального значения TD
@@ -456,45 +461,6 @@ function drawBondBall(centerX, centerY) {
   ctx.strokeRect(rectLeft, rectTop, rectangleWidth, rectangleHeight);
   ctx.fill();
   ctx.stroke();
-
-  //console.log("Площадь шара:", ballArea.toFixed(2), "квадратных единиц");
-  //console.log("Площадь низа:", totalArea.toFixed(2), "квадратных единиц");
-  //console.log("Площадь трапеции:", trapArea.toFixed(2), "квадратных единиц");
-  //console.log("Площадь шара:", ballArea.toFixed(2), "квадратных единиц");
-  //
-  //// Отрисовка точки
-  //ctx.fillStyle = "blue";
-  //ctx.beginPath();
-  //ctx.arc(cX, cY, 5, 0, 2 * Math.PI);
-  //ctx.fill();
-  //ctx.stroke();
-
-  //// Отрисовка прямоугольника
-  //const rectLeft =intersectionX;
-  //const rectTop = intersectionY;
-  //const rectangleWidth = parseFloat(sliders.bs.value)*parseFloat(sliders.cd.value);
-  //const rectangleHeight = parseFloat(sliders.bt.value)*parseFloat(sliders.cd.value);
-  //ctx.fillStyle = "yellow"; // Желтый цвет
-  //ctx.fillRect(rectLeft, rectTop, rectangleWidth, rectangleHeight);
-
-  //// Добавляем обводку для наглядности
-  //ctx.strokeStyle = "black";
-  //ctx.strokeRect(intersectionX, intersectionY, 5, 5);
-  //ctx.fill();
-  //ctx.stroke();
-
-  //// Отрисовка шарика
-  //ctx.fillStyle = "yellow";
-  //ctx.beginPath();
-  //ctx.arc(ballCenterX, ballCenterY, ballRadius, 0, 2 * Math.PI);
-  //ctx.fill();
-  //ctx.stroke();
-  //
-  //// Линия, проходящая через центр шарика перпендикулярно BC
-  //const line3x1 = ballCenterX - Math.cos(normalAngle) * canvas.height; // Начало линии
-  //const line3y1 = ballCenterY - Math.sin(normalAngle) * canvas.height;
-  //const line3x2 = ballCenterX + Math.cos(normalAngle) * canvas.height; // Конец линии
-  //const line3y2 = ballCenterY + Math.sin(normalAngle) * canvas.height;
 }
 
 // Вычисление точек для фигуры
