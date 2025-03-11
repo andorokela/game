@@ -1,10 +1,10 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Capillary Drawing</title>
-    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="Capillary%20Drawing_files/styles.css">
   </head>
   <body>
     <div class="container">
@@ -13,7 +13,7 @@
         <div class="pitch-type" id="hdPitchType" align="center">Normal</div>
         <canvas id="capillaryCanvas" width="400" height="400"></canvas>
         <label>
-          <input type="checkbox" id="showBall" name="showBall"  oninput="drawCapillary();" />Показать шарик
+          <input type="checkbox" id="showBall" name="showBall" oninput="drawCapillary();">Показать шарик
         </label>
       </div>
       <!-- Вторая колонка: ползунки -->
@@ -22,70 +22,43 @@
           <label for="wdSlider">WD (Wire Diameter):</label>
           <div class="range-container">
             <span class="min">15 μm</span>
-            <input type="range" id="wdSlider" min="15" max="40" step="1.0" value="18" />
+            <input type="range" id="wdSlider" min="15" max="40" step="1.0" value="20">
             <span class="max">40 μm</span>
           </div>
-          <div class="value-display" id="wdValue">18 μm</div>
+          <div class="value-display" id="wdValue">20 μm</div>
         </div>
         <div class="control-group">
           <label for="cdSlider">CD (Chamfer Diameter):</label>
           <div class="range-container">
             <span class="min">20.00 μm</span>
-            <input
-              type="range"
-              id="cdSlider"
-              min="20"
-              max="139.7"
-              step="1"
-              value="45.0"
-              oninput="updateCdDependentSliders(); drawCapillary();" />
+            <input type="range" id="cdSlider" min="20" max="139.7" step="0.1" value="35.6" oninput="updateCdDependentSliders(); drawCapillary();">
             <span class="max">140.0 μm</span>
           </div>
-          <div class="value-display" id="cdValue">45.0 μm</div>
+          <div class="value-display" id="cdValue">35.6 μm</div>
         </div>
         <div class="control-group">
           <label for="bsSlider">BS (Ball contact Size):</label>
           <div class="range-container">
             <span class="min" id="bsMin">1.1 CD</span>
-            <input
-              type="range"
-              id="bsSlider"
-              min="1.1"
-              max="2.3"
-              step="0.001"
-              value="1.2"
-              oninput="updateBsValue(); drawCapillary();" />
+            <input type="range" id="bsSlider" min="1.1" max="1.3" step="0.001" value="1.3" oninput="updateBsValue(); drawCapillary();">
             <span class="max" id="bsMax">1.3 CD</span>
           </div>
-          <div class="value-display" id="bsValue">111.24 μm</div>
+          <div class="value-display" id="bsValue">46.28 μm</div>
         </div>
         <div class="control-group">
           <label for="bppSlider">BPP (Bond Pad Pitch):</label>
           <div class="range-container">
             <span class="min">50 μm</span>
-            <input
-              type="range"
-              id="bppSlider"
-              min="50"
-              max="250"
-              step="1"
-              value="90"
-              oninput="updateTdMax(); drawCapillary();" />
+            <input type="range" id="bppSlider" min="50" max="250" step="1" value="91" oninput="updateTdMax(); drawCapillary();">
             <span class="max">250 μm</span>
           </div>
-          <div class="value-display" id="bppValue">90 μm</div>
+          <div class="value-display" id="bppValue">91.00 μm</div>
         </div>
         <div class="control-group">
           <label for="icaSlider">ICA (Inner Chamfer Angle):</label>
           <div class="range-container">
             <span class="min">50°</span>
-            <input
-              type="range"
-              id="icaSlider"
-              min="50"
-              max="120"
-              value="90"
-              oninput="updateValue('ica', this.value); drawCapillary();" />
+            <input type="range" id="icaSlider" min="50" max="120" value="90" oninput="updateValue('ica', this.value); drawCapillary();">
             <span class="max">120°</span>
           </div>
           <div class="value-display" id="icaValue">90°</div>
@@ -94,14 +67,7 @@
           <label for="orSlider">OR (Outer Radius):</label>
           <div class="range-container">
             <span class="min">8 μm</span>
-            <input
-              type="range"
-              id="orSlider"
-              min="8"
-              max="30"
-              step="1"
-              value="8"
-              oninput="updateValue('or', this.value); drawCapillary();" />
+            <input type="range" id="orSlider" min="8" max="30" step="1" value="8" oninput="updateValue('or', this.value); drawCapillary();">
             <span class="max">30 μm</span>
           </div>
           <div class="value-display" id="orValue">8 μm</div>
@@ -109,15 +75,8 @@
                 <div class="control-group">
           <label for="lhSlider">LH (Loop height):</label>
           <div class="range-container">
-            <span class="min" id="lhMin">100 μm</span>
-            <input
-              type="range"
-              id="lhSlider"
-              min="100"
-              max="450"
-              step="1"
-              value="100"
-              oninput="updateValue('lh', this.value); drawCapillary();" />
+            <span class="min" id="lhMin">93.00 μm</span>
+            <input type="range" id="lhSlider" min="100" max="450" step="1" value="107" oninput="updateValue('lh', this.value); drawCapillary();">
             <span class="max">450 μm</span>
           </div>
           <div class="value-display" id="lhValue">100 μm</div>
@@ -129,56 +88,36 @@
         <div class="control-group">
           <label for="hdSlider">HD (Hole Diameter):</label>
           <div class="range-container">
-            <span class="min" id="hdMin">21 μm</span>
-            <input
-              type="range"
-              id="hdSlider"
-              min="20"
-              max="31"
-              step="1.0"
-              value="25"
-              oninput="updateHdPitchType();updateWdAndHd(); drawCapillary();" />
-            <span class="max" id="hdMax">31 μm</span>
+            <span class="min" id="hdMin">22 μm</span>
+            <input type="range" id="hdSlider" min="22" max="33" step="0.1" value="27.9" oninput="updateHdPitchType();updateWdAndHd(); drawCapillary();">
+            <span class="max" id="hdMax">33 μm</span>
           </div>
-          <div class="value-display" id="hdValue">25 μm</div>
+          <div class="value-display" id="hdValue">27.9 μm</div>
         </div>
         <div class="control-group">
           <label for="fabSlider">FAB (Free Air Ball):</label>
           <div class="range-container">
             <span class="min" id="fabMin">0.85 CD</span>
-            <input
-              type="range"
-              id="fabSlider"
-              min="0.85"
-              max="0.95"
-              step="0.001"
-              value="0.9"
-              oninput="updateFabValue(); drawCapillary();" />
+            <input type="range" id="fabSlider" min="0.85" max="0.95" step="0.001" value="0.95" oninput="updateFabValue(); drawCapillary();">
             <span class="max" id="fabMax">0.95 CD</span>
           </div>
-          <div class="value-display" id="fabValue">90.0 μm</div>
+          <div class="value-display" id="fabValue">33.82 μm</div>
         </div>
         <div class="control-group">
           <label for="btSlider">BT (Ball Thickness):</label>
           <div class="range-container">
             <span class="min">0.17 CD</span>
-            <input type="range" id="btSlider" min="0.17" max="0.5" step="0.002" value="0.18" />
+            <input type="range" id="btSlider" min="0.17" max="0.2" step="0.002" value="0.2">
             <span class="max">0.2 CD</span>
           </div>
-          <div class="value-display" id="btValue">16.69 μm</div>
+          <div class="value-display" id="btValue">9.26 μm</div>
         </div>
         <div class="control-group">
           <label for="tdSlider">TD (Tip Diameter):</label>
           <div class="range-container">
-            <span class="min" id="tdMin">40 μm</span>
-            <input
-              type="range"
-              id="tdSlider"
-              min="40"
-              max="200"
-              value="120"
-              oninput="updateValue('td', this.value); drawCapillary();" />
-            <span class="max" id="tdMax">120 μm</span>
+            <span class="min" id="tdMin">74.20 μm</span>
+            <input type="range" id="tdSlider" min="38.6" max="155.02422708632847" value="78.6" oninput="updateValue('td', this.value); drawCapillary();">
+            <span class="max" id="tdMax">155.02 μm</span>
           </div>
           <div class="value-display" id="tdValue">200 μm</div>
         </div>
@@ -186,13 +125,7 @@
           <label for="faSlider">FA (Face Angle):</label>
           <div class="range-container">
             <span class="min">0°</span>
-            <input
-              type="range"
-              id="faSlider"
-              min="0"
-              max="11"
-              value="4"
-              oninput="updateValue('fa', this.value); drawCapillary();" />
+            <input type="range" id="faSlider" min="0" max="11" value="4" oninput="updateValue('fa', this.value); drawCapillary();">
             <span class="max">11°</span>
           </div>
           <div class="value-display" id="faValue">4°</div>
@@ -201,19 +134,14 @@
           <label for="caSlider">CA (Cone Angle):</label>
           <div class="range-container">
             <span class="min">0°</span>
-            <input
-              type="range"
-              id="caSlider"
-              min="0"
-              max="30"
-              value="4"
-              oninput="updateValue('ca', this.value); drawCapillary();" />
+            <input type="range" id="caSlider" min="0" max="30" value="4" oninput="updateValue('ca', this.value); drawCapillary();">
             <span class="max">30°</span>
           </div>
           <div class="value-display" id="caValue">4°</div>
         </div>
       </div>
     </div>
-    <script src="js/script.js"></script>
-  </body>
-</html>
+    <script src="Capillary%20Drawing_files/script.js"></script>
+  
+
+</body></html>
