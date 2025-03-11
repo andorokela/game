@@ -50,7 +50,7 @@ function updateValue(id, value) {
 // Обновление WD и HD
 function updateWdAndHd() {
   const wd = parseFloat(sliders.wd.value);
-  const hdMin = wd + 3;
+  const hdMin = wd + 2;
   const hdMax = wd + 13;
   sliders.hd.min = hdMin;
   sliders.hd.max = hdMax;
@@ -75,7 +75,7 @@ function updateHdPitchType() {
   const hd = parseFloat(sliders.hd.value);
 
   let pitchType = "";
-  if (hd === wd + 3) {
+  if (hd === wd + 2) {
     pitchType = "Ultra Fine Pitch";
   } else if (hd >= wd + 4 && hd <= wd + 6) {
     pitchType = "Fine Pitch";
@@ -114,17 +114,18 @@ function updateBsValue() {
 
 // Обновление BT
 function updateBtValue() {
+  const bs = parseFloat(sliders.bs.value);
   const cd = parseFloat(sliders.cd.value);
-  const bt = parseFloat(sliders.bt.value) * cd;
+  const bt = parseFloat(sliders.bt.value) * cd * bs;
   document.getElementById("btValue").textContent = `${bt.toFixed(2)} μm`;
 }
 
 // Обновление LH
 function updateLhValue() {
   const td = parseFloat(sliders.td.value);
- // const lh = parseFloat(sliders.lh.value) * cd;
+  // const lh = parseFloat(sliders.lh.value) * cd;
   const lhmin = 2.75 * parseFloat(sliders.fab.value) * parseFloat(sliders.cd.value);
-//  document.getElementById("lhValue").textContent = `${lh.toFixed(2)} μm`;
+  //  document.getElementById("lhValue").textContent = `${lh.toFixed(2)} μm`;
   document.getElementById("lhMin").textContent = `${lhmin.toFixed(2)} μm`;
 }
 
@@ -216,9 +217,25 @@ function drawCapillary() {
   drawLoop(centerX + parseFloat(sliders.bpp.value), centerY);
   drawBondBall(centerX + parseFloat(sliders.bpp.value), centerY);
 
-
   drawLoop(centerX - parseFloat(sliders.bpp.value), centerY);
   drawBondBall(centerX - parseFloat(sliders.bpp.value), centerY);
+  drawCircle(centerX, centerY);
+}
+
+function drawCircle(centerX, centerY) {
+  const cd = parseFloat(sliders.cd.value);
+  const hd = parseFloat(sliders.hd.value);
+  ctx.fillStyle = "white"; // Закрашиваем фигуру светло-серым цветом
+  ctx.beginPath();
+  ctx.arc(centerX, centerY + 150, cd / 2, 0, 2 * Math.PI);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(centerX, centerY + 150, hd / 2, 0, 2 * Math.PI);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
 }
 
 function drawLoop(centerX, centerY) {
@@ -234,8 +251,8 @@ function drawLoop(centerX, centerY) {
     centerY -
     parseFloat(sliders.lh.value) +
     ((parseFloat(sliders.cd.value) - parseFloat(sliders.hd.value)) / 2) *
-      Math.tan((Math.PI/2 - (parseFloat(sliders.ica.value) * Math.PI) / 180) / 2) + 
-        parseFloat(sliders.bt.value)*parseFloat(sliders.cd.value);//;
+      Math.tan((Math.PI / 2 - (parseFloat(sliders.ica.value) * Math.PI) / 180) / 2) +
+    parseFloat(sliders.bt.value) * parseFloat(sliders.cd.value); //;
 
   // Отрисовка прямоугольника
   ctx.fillStyle = "yellow"; // Желтый цвет
@@ -293,7 +310,7 @@ function drawBall(centerX, centerY) {
   const cY =
     bY +
     ((parseFloat(sliders.cd.value) - parseFloat(sliders.hd.value)) / 2) *
-      Math.tan((Math.PI - (parseFloat(sliders.ica.value) * Math.PI / 180))/2);
+      Math.tan((Math.PI - (parseFloat(sliders.ica.value) * Math.PI) / 180) / 2);
 
   // Угол наклона отрезка BC
   const angleBC = Math.atan2(cY - bY, cX - bX);
