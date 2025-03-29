@@ -136,7 +136,7 @@
         <div class="settings-grid">
             <div class="settings-item">
                 <div class="slider-header">
-                    <label>Число:</label>
+                    <label>Макс. число:</label>
                     <div class="number-display" id="maxNumberDisplay">30</div>
                 </div>
                 <div class="slider-container">
@@ -146,7 +146,7 @@
             
             <div class="settings-item">
                 <div class="slider-header">
-                    <label>Шрифт от:</label>
+                    <label>Мин. шрифт:</label>
                     <div class="number-display" id="minFontSizeDisplay">20</div>
                 </div>
                 <div class="slider-container">
@@ -156,7 +156,7 @@
 
             <div class="settings-item">
                 <div class="slider-header">
-                    <label>Шрифт до:</label>
+                    <label>Макс. шрифт:</label>
                     <div class="number-display" id="maxFontSizeDisplay">50</div>
                 </div>
                 <div class="slider-container">
@@ -166,6 +166,10 @@
 
             <div class="settings-item checkbox-group">
                 <label><input type="checkbox" id="angleCheckbox"> Поворот</label>
+            </div>
+
+            <div class="settings-item checkbox-group">
+                <label><input type="checkbox" id="eraseCheckbox"> Стирать</label>
             </div>
         </div>
         
@@ -274,18 +278,27 @@
             const x = (e.clientX - rect.left) * (canvas.width / rect.width);
             const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-            for (const num of numbers) {
+            for (let i = 0; i < numbers.length; i++) {
+                const num = numbers[i];
                 const dx = num.x - x;
                 const dy = num.y - y;
                 const distance = Math.sqrt(dx*dx + dy*dy);
                 const clickRadius = num.fontSize * 0.6;
                 
                 if (distance < clickRadius && num.value === currentNumber) {
+                    // Удаление числа при активном флажке
+                    if (document.getElementById('eraseCheckbox').checked) {
+                        numbers.splice(i, 1);
+                        drawNumbers();
+                    }
+                    
                     currentNumber++;
                     canvas.style.backgroundColor = '#aaffaa';
                     setTimeout(() => canvas.style.backgroundColor = '', 200);
                     
-                    if (currentNumber > numbers.length) endGame();
+                    if (currentNumber > parseInt(document.getElementById('maxNumberSlider').value)) {
+                        endGame();
+                    }
                     return;
                 }
             }
