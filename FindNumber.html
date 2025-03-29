@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body {
+            margin: 0;
+            padding: 10px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: #2c3e50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .canvas-container {
+            flex: 1;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            background: #fff5e6;
+            border: 2px solid #ffcc00;
+            border-radius: 10px;
+        }
+
+        .controls-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 10px auto;
+            padding: 0 10px;
+        }
+
+        .start-button {
+            width: 100%;
+            padding: 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin: 10px 0;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .settings-item {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .slider-container {
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        input[type="range"] {
+            width: 100%;
+        }
+
+        .number-display {
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        #time {
+            font-size: 1.2em;
+            color: #e74c3c;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        @media (max-width: 480px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .start-button {
+                font-size: 1em;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas-container">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    
+    <div class="controls-container">
+        <button id="startButton" class="start-button" onclick="startGame()">Старт</button>
+        
+        <div class="settings-grid">
+            <div class="settings-item">
+                <label>Макс. число:</label>
+                <div class="slider-container">
+                    <input type="range" id="maxNumberSlider" min="1" max="50" value="10">
+                    <div class="number-display" id="maxNumberDisplay">10</div>
+                </div>
+            </div>
+            
+            <div class="settings-item">
+                <label>Мин. шрифт:</label>
+                <div class="slider-container">
+                    <input type="range" id="minFontSizeSlider" min="10" max="40" value="20">
+                    <div class="number-display" id="minFontSizeDisplay">20</div>
+                </div>
+            </div>
+
+            <div class="settings-item">
+                <label>Макс. шрифт:</label>
+                <div class="slider-container">
+                    <input type="range" id="maxFontSizeSlider" min="20" max="80" value="50">
+                    <div class="number-display" id="maxFontSizeDisplay">50</div>
+                </div>
+            </div>
+
+            <div class="settings-item checkbox-group">
+                <label><input type="checkbox" id="angleCheckbox"> Поворот</label>
+            </div>
+        </div>
+        
+        <div id="time">Время: 0 сек</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let numbers = [];
+        let currentNumber = 1;
+        let startTime;
+        let timerInterval;
+        let gameOver = false;
+
+        // Синхронизация слайдеров и числовых дисплеев
+        document.getElementById('maxNumberSlider').addEventListener('input', (e) => {
+            document.getElementById('maxNumberDisplay').textContent = e.target.value;
+        });
+        
+        document.getElementById('minFontSizeSlider').addEventListener('input', (e) => {
+            document.getElementById('minFontSizeDisplay').textContent = e.target.value;
+        });
+        
+        document.getElementById('maxFontSizeSlider').addEventListener('input', (e) => {
+            document.getElementById('maxFontSizeDisplay').textContent = e.target.value;
+        });
+
+        function resizeCanvas() {
+            const container = document.querySelector('.canvas-container');
+            const maxWidth = container.offsetWidth;
+            const maxHeight = window.innerHeight * 0.6;
+            
+            canvas.width = maxWidth;
+            canvas.height = maxHeight;
+        }
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            if (numbers.length > 0 && !gameOver) {
+                generateNumbers();
+                drawNumbers();
+            }
+        });
+
+        resizeCanvas();
+
+        function generateNumbers() {
+            const max = parseInt(document.getElementById('maxNumberSlider').value);
+            const minFont = parseInt(document.getElementById('minFontSizeSlider').value);
+            const maxFont = parseInt(document.getElementById('maxFontSizeSlider').value);
+            const angleEnabled = document.getElementById('angleCheckbox').checked;
+
+            numbers = [];
+            for (let i = 1; i <= max; i++) {
+                let x, y, fontSize, angle = 0;
+                let placed = false;
+                let attempts = 0;
+                
+                while (!placed && attempts < 100) {
+                    attempts++;
+                    fontSize = Math.random() * (maxFont - minFont) + minFont;
+                    const minMargin = fontSize * 0.6;
+                    
+                    x = Math.random() * (canvas.width - minMargin * 2) + minMargin;
+                    y = Math.random() * (canvas.height - minMargin * 2) + minMargin;
+                    
+                    placed = true;
+                    for (const num of numbers) {
+                        const dx = num.x - x;
+                        const dy = num.y - y;
+                        const distance = Math.sqrt(dx*dx + dy*dy);
+                        const minDistance = (num.fontSize + fontSize) * 0.6;
+                        
+                        if (distance < minDistance) {
+                            placed = false;
+                            break;
+                        }
+                    }
+                }
+                
+                if (angleEnabled) {
+                    angle = Math.random() * 60 - 30;
+                }
+                
+                numbers.push({ value: i, x, y, fontSize, angle });
+            }
+        }
+
+        function drawNumbers() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            numbers.forEach(num => {
+                ctx.save();
+                ctx.translate(num.x, num.y);
+                ctx.rotate(num.angle * Math.PI / 180);
+                ctx.font = `${num.fontSize}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#000';
+                ctx.fillText(num.value, 0, 0);
+                ctx.restore();
+            });
+        }
+
+        canvas.addEventListener('click', (e) => {
+            if (gameOver || !startTime) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            for (const num of numbers) {
+                const dx = num.x - x;
+                const dy = num.y - y;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+                const clickRadius = num.fontSize * 0.6;
+                
+                if (distance < clickRadius && num.value === currentNumber) {
+                    currentNumber++;
+                    canvas.style.backgroundColor = '#aaffaa';
+                    setTimeout(() => canvas.style.backgroundColor = '', 200);
+                    
+                    if (currentNumber > numbers.length) endGame();
+                    return;
+                }
+            }
+            
+            canvas.style.backgroundColor = '#ffaaaa';
+            setTimeout(() => canvas.style.backgroundColor = '', 200);
+        });
+
+        function startGame() {
+            gameOver = false;
+            currentNumber = 1;
+            generateNumbers();
+            drawNumbers();
+            startTime = Date.now();
+            document.getElementById('time').textContent = 'Время: 0 сек';
+            timerInterval = setInterval(updateTime, 1000);
+            document.getElementById('startButton').disabled = false;
+        }
+
+        function updateTime() {
+            const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+            document.getElementById('time').textContent = `Время: ${elapsedTime} сек`;
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            startTime = null;
+            gameOver = true;
+            document.getElementById('startButton').disabled = false;
+            const time = document.getElementById('time').textContent;
+            alert(`Победа! ${time}`);
+        }
+    </script>
+</body>
+</html>
