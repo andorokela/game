@@ -42,27 +42,27 @@
 
         .start-button {
             width: 100%;
-            padding: 15px;
+            padding: 12px;
             background: #4CAF50;
             color: white;
             border: none;
             border-radius: 10px;
-            font-size: 1.2em;
+            font-size: 1.1em;
             cursor: pointer;
-            margin: 10px 0;
+            margin: 8px 0;
         }
 
         .settings-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 0px 0;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Уменьшена минимальная ширина */
+            gap: 10px;
+            margin: 10px 0;
         }
 
         .slider-wrapper {
             position: relative;
-            padding: 25px 0 40px; /* Увеличен верхний отступ */
-            height: 120px;
+            padding: 15px 0 25px; /* Уменьшены отступы */
+            height: auto;
         }
 
         .rs-control {
@@ -80,17 +80,19 @@
 
         .rs-handle {
             background-color: #3f3f3f !important;
+            width: 16px !important; /* Уменьшен размер ручки */
+            height: 16px !important;
         }
 
         .slider-label {
             position: absolute;
-            top: 5px; /* Смещение метки выше */
+            top: 0;
             left: 50%;
             transform: translateX(-50%);
             font-weight: 600;
-            font-size: 0.9em;
+            font-size: 0.8em; /* Уменьшен размер шрифта */
             color: #2c3e50;
-            z-index: 2; /* Метка поверх слайдера */
+            z-index: 2;
         }
 
         .range-labels {
@@ -98,14 +100,25 @@
             width: 100%;
             display: flex;
             justify-content: space-between;
-            font-size: 0.8em;
+            font-size: 0.7em; /* Уменьшен размер шрифта */
             color: #7f8c8d;
             pointer-events: none;
-            bottom: -20px;
+            bottom: -15px; /* Уменьшен отступ снизу */
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 8px;
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 8px;
         }
 
         #time {
-            font-size: 1.1em;
+            font-size: 1em;
             color: #e74c3c;
             text-align: center;
             margin: 10px 0;
@@ -113,23 +126,31 @@
 
         @media (max-width: 480px) {
             .settings-grid {
-                grid-template-columns: 1fr;
-                gap: 10px;
+                grid-template-columns: 1fr; /* Одна колонка на мобильных */
+                gap: 8px;
             }
             
             .slider-wrapper {
-                padding: 20px 0 30px;
-                height: 100px;
+                padding: 10px 0 15px;
+            }
+            
+            .rs-control {
+                transform: scale(0.8); /* Масштабирование слайдеров */
+                transform-origin: center;
             }
             
             .slider-label {
-                top: 3px;
-                font-size: 0.8em;
+                font-size: 0.7em;
             }
             
             .range-labels {
-                font-size: 0.7em;
-                bottom: -18px;
+                font-size: 0.6em;
+                bottom: -12px;
+            }
+            
+            .start-button {
+                padding: 10px;
+                font-size: 1em;
             }
         }
     </style>
@@ -140,10 +161,6 @@
     </div>
     
     <div class="controls-container">
-            <div class="checkbox-group">
-                <label><input type="checkbox" id="angleCheckbox"> Поворот</label>
-                <label><input type="checkbox" id="eraseCheckbox"> Стирать</label>
-            </div>
         <button id="startButton" class="start-button" onclick="startGame()">Старт</button>
         
         <div class="settings-grid">
@@ -168,7 +185,10 @@
             </div>
 
             <!-- Флажки -->
-
+            <div class="checkbox-group">
+                <label><input type="checkbox" id="angleCheckbox"> Поворот</label>
+                <label><input type="checkbox" id="eraseCheckbox"> Стирать</label>
+            </div>
         </div>
         
         <div id="time">Время: 0 сек</div>
@@ -181,16 +201,17 @@
     <script>
         $(document).ready(function() {
             function initSliders() {
-                const sliderRadius = $('.slider-wrapper').width() * 0.45;
+                const sliderWidth = $('.slider-wrapper').width();
+                const radius = Math.min(sliderWidth * 0.35, 50); // Адаптивный радиус
 
                 // Слайдер максимального числа
                 $("#maxNumberSlider").roundSlider({
-                    radius: sliderRadius,
-                    width: 8,
-                    handleSize: "+12",
+                    radius: radius,
+                    width: 6,
+                    handleSize: "+10",
                     min: 1,
                     max: 50,
-                    value: 30,
+                    value: 10,
                     startAngle: 315,
                     editableTooltip: false,
                     circleShape: "half-top",
@@ -202,9 +223,9 @@
 
                 // Слайдер диапазона шрифтов
                 $("#fontRangeSlider").roundSlider({
-                    radius: sliderRadius,
-                    width: 8,
-                    handleSize: "+12",
+                    radius: radius,
+                    width: 6,
+                    handleSize: "+10",
                     min: 10,
                     max: 80,
                     value: [20, 50],
