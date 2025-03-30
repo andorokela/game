@@ -310,7 +310,7 @@
             startTime = Date.now();
             $("#time").text('Время: 0 сек');
             timerInterval = setInterval(updateTime, 1000);
-            $("#startButton").prop('disabled', true);
+            $("#startButton").prop('disabled', false);
         }
 
         function updateTime() {
