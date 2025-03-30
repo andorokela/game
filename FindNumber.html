@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <style>
         * {
             box-sizing: border-box;
@@ -37,120 +38,88 @@
         .controls-container {
             width: calc(100% - 20px);
             margin: 0 auto;
-            padding: 0 5px;
         }
 
-        .start-button {
-            width: 100%;
-            padding: 12px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1em;
-            cursor: pointer;
-            margin: 8px 0;
-        }
-
-        .settings-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Уменьшена минимальная ширина */
-            gap: 10px;
+        .top-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
             margin: 10px 0;
         }
 
-        .slider-wrapper {
-            position: relative;
-            padding: 15px 0 25px; /* Уменьшены отступы */
-            height: auto;
-        }
-
-        .rs-control {
-            margin: 0 auto;
-        }
-
-        .rs-range-color {
-            background-color: #2196F3;
-        }
-
-        .rs-path-color {
-            background-color: #dfdfdf;
-            border-color: #3f3f3f;
-        }
-
-        .rs-handle {
-            background-color: #3f3f3f !important;
-            width: 16px !important; /* Уменьшен размер ручки */
-            height: 16px !important;
-        }
-
-        .slider-label {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            font-weight: 600;
-            font-size: 0.8em; /* Уменьшен размер шрифта */
-            color: #2c3e50;
-            z-index: 2;
-        }
-
-        .range-labels {
-            position: absolute;
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.7em; /* Уменьшен размер шрифта */
-            color: #7f8c8d;
-            pointer-events: none;
-            bottom: -15px; /* Уменьшен отступ снизу */
-        }
-
         .checkbox-group {
+            flex: 1;
             display: flex;
-            align-items: center;
-            justify-content: center;
             gap: 10px;
-            padding: 8px;
+            padding: 12px;
             background: white;
             border: 1px solid #eee;
             border-radius: 8px;
         }
 
         #time {
-            font-size: 1em;
-            color: #e74c3c;
+            flex: 1;
+            padding: 12px;
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 8px;
             text-align: center;
+            font-size: 1.1em;
+            color: #e74c3c;
+        }
+
+        .start-button {
+            width: 100%;
+            padding: 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
             margin: 10px 0;
         }
 
+        .slider-container {
+            margin: 15px 0;
+            position: relative;
+        }
+
+        .slider-label {
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .single-slider {
+            width: 100%;
+        }
+
+        .range-slider {
+            width: 100%;
+        }
+
+        .slider-values {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 0.8em;
+            color: #7f8c8d;
+        }
+
         @media (max-width: 480px) {
-            .settings-grid {
-                grid-template-columns: 1fr; /* Одна колонка на мобильных */
-                gap: 8px;
+            .top-controls {
+                flex-direction: column;
             }
             
-            .slider-wrapper {
-                padding: 10px 0 15px;
+            .checkbox-group,
+            #time {
+                flex: auto;
+                margin: 5px 0;
             }
             
-            .rs-control {
-                transform: scale(0.8); /* Масштабирование слайдеров */
-                transform-origin: center;
-            }
-            
-            .slider-label {
+            .slider-values {
                 font-size: 0.7em;
-            }
-            
-            .range-labels {
-                font-size: 0.6em;
-                bottom: -12px;
-            }
-            
-            .start-button {
-                padding: 10px;
-                font-size: 1em;
             }
         }
     </style>
@@ -161,88 +130,63 @@
     </div>
     
     <div class="controls-container">
-        <button id="startButton" class="start-button" onclick="startGame()">Старт</button>
-        
-        <div class="settings-grid">
-            <!-- Максимальное число -->
-            <div class="slider-wrapper">
-                <div class="slider-label">Макс. число</div>
-                <div id="maxNumberSlider" class="rslider"></div>
-                <div class="range-labels">
-                    <span>1</span>
-                    <span>50</span>
-                </div>
-            </div>
-
-            <!-- Диапазон шрифтов -->
-            <div class="slider-wrapper">
-                <div class="slider-label">Шрифты</div>
-                <div id="fontRangeSlider" class="rslider"></div>
-                <div class="range-labels" id="fontRangeLabels">
-                    <span id="minFontSizeDisplay">10</span>
-                    <span id="maxFontSizeDisplay">80</span>
-                </div>
-            </div>
-
+        <!-- Верхние элементы управления -->
+        <div class="top-controls">
             <!-- Флажки -->
             <div class="checkbox-group">
                 <label><input type="checkbox" id="angleCheckbox"> Поворот</label>
                 <label><input type="checkbox" id="eraseCheckbox"> Стирать</label>
             </div>
+            
+            <!-- Таймер -->
+            <div id="time">Время: 0 сек</div>
         </div>
-        
-        <div id="time">Время: 0 сек</div>
+
+        <!-- Кнопка Старт -->
+        <button id="startButton" class="start-button">Старт</button>
+
+        <!-- Слайдер максимального числа -->
+        <div class="slider-container">
+            <div class="slider-label">Макс. число</div>
+            <input type="range" id="maxNumberSlider" class="single-slider" min="1" max="50" value="10">
+            <div class="slider-values">
+                <span>1</span>
+                <span id="maxNumberDisplay">10</span>
+                <span>50</span>
+            </div>
+        </div>
+
+        <!-- Слайдер диапазона шрифтов -->
+        <div class="slider-container">
+            <div class="slider-label">Шрифты</div>
+            <div id="fontRangeSlider" class="range-slider"></div>
+            <div class="slider-values">
+                <span id="minFontSizeDisplay">20</span>
+                <span id="maxFontSizeDisplay">50</span>
+            </div>
+        </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-2.2.4.js"></script>
-    <script src="https://cdn.jsdelivr.net/jquery.roundslider/1.0/roundslider.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/jquery.roundslider/1.0/roundslider.min.css">
-
+    <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
     <script>
         $(document).ready(function() {
-            function initSliders() {
-                const sliderWidth = $('.slider-wrapper').width();
-                const radius = Math.min(sliderWidth * 0.35, 150); // Адаптивный радиус
+            // Слайдер диапазона шрифтов
+            $("#fontRangeSlider").slider({
+                range: true,
+                min: 10,
+                max: 80,
+                values: [20, 50],
+                slide: function(event, ui) {
+                    $("#minFontSizeDisplay").text(ui.values[0]);
+                    $("#maxFontSizeDisplay").text(ui.values[1]);
+                }
+            });
 
-                // Слайдер максимального числа
-                $("#maxNumberSlider").roundSlider({
-                    radius: radius,
-                    width: 6,
-                    handleSize: "+10",
-                    min: 1,
-                    max: 50,
-                    value: 10,
-                    startAngle: 315,
-                    editableTooltip: false,
-                    circleShape: "half-top",
-                    sliderType: "min-range",
-                    change: function(e) {
-                        $(this).siblings('.range-labels').find('span:last-child').text(e.value);
-                    }
-                });
-
-                // Слайдер диапазона шрифтов
-                $("#fontRangeSlider").roundSlider({
-                    radius: radius,
-                    width: 6,
-                    handleSize: "+10",
-                    min: 10,
-                    max: 80,
-                    value: [20, 50],
-                    startAngle: 315,
-                    editableTooltip: false,
-                    circleShape: "half-top",
-                    sliderType: "range",
-                    change: function(e) {
-                        const [min, max] = e.value.split(',');
-                        $("#minFontSizeDisplay").text(min);
-                        $("#maxFontSizeDisplay").text(max);
-                    }
-                });
-            }
-
-            initSliders();
-            $(window).resize(initSliders);
+            // Слайдер максимального числа
+            $("#maxNumberSlider").on('input', function() {
+                $("#maxNumberDisplay").text(this.value);
+            });
         });
 
         const canvas = document.getElementById('gameCanvas');
@@ -270,12 +214,12 @@
         resizeCanvas();
 
         function generateNumbers() {
-            const maxNumber = $("#maxNumberSlider").roundSlider("getValue");
-            const [minFont, maxFont] = $("#fontRangeSlider").roundSlider("getValue").split(',').map(Number);
-            const angleEnabled = document.getElementById('angleCheckbox').checked;
+            const max = parseInt($("#maxNumberSlider").val());
+            const [minFont, maxFont] = $("#fontRangeSlider").slider("values");
+            const angleEnabled = $("#angleCheckbox").prop('checked');
 
             numbers = [];
-            for (let i = 1; i <= maxNumber; i++) {
+            for (let i = 1; i <= max; i++) {
                 let x, y, fontSize, angle = 0;
                 let placed = false;
                 let attempts = 0;
@@ -340,7 +284,7 @@
                 const clickRadius = num.fontSize * 0.6;
                 
                 if (distance < clickRadius && num.value === currentNumber) {
-                    if (document.getElementById('eraseCheckbox').checked) {
+                    if ($("#eraseCheckbox").prop('checked')) {
                         numbers.splice(i, 1);
                         drawNumbers();
                     }
@@ -349,7 +293,7 @@
                     canvas.style.backgroundColor = '#aaffaa';
                     setTimeout(() => canvas.style.backgroundColor = '', 200);
                     
-                    if (currentNumber > $("#maxNumberSlider").roundSlider("getValue")) endGame();
+                    if (currentNumber > parseInt($("#maxNumberSlider").val())) endGame();
                     return;
                 }
             }
@@ -364,24 +308,26 @@
             generateNumbers();
             drawNumbers();
             startTime = Date.now();
-            document.getElementById('time').textContent = 'Время: 0 сек';
+            $("#time").text('Время: 0 сек');
             timerInterval = setInterval(updateTime, 1000);
-            document.getElementById('startButton').disabled = false;
+            $("#startButton").prop('disabled', true);
         }
 
         function updateTime() {
             const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-            document.getElementById('time').textContent = `Время: ${elapsedTime} сек`;
+            $("#time").text(`Время: ${elapsedTime} сек`);
         }
 
         function endGame() {
             clearInterval(timerInterval);
             startTime = null;
             gameOver = true;
-            document.getElementById('startButton').disabled = false;
-            const time = document.getElementById('time').textContent;
-            alert(`Победа! ${time}`);
+            $("#startButton").prop('disabled', false);
+            alert(`Победа! ${$("#time").text()}`);
         }
+
+        // Привязка события кнопки Старт
+        $("#startButton").on('click', startGame);
     </script>
 </body>
 </html>
