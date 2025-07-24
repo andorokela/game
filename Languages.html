@@ -305,7 +305,11 @@
                 occupied.add(key);
                 population.push({
                     x, y,
-                    color: { r: 0, g: 0, b: 0 }, // Изначально без языка
+                    color: { 
+                        r: Math.floor(Math.random() * 256),
+                        g: Math.floor(Math.random() * 256),
+                        b: Math.floor(Math.random() * 256)
+                    },
                     age: 0
                 });
             }
