@@ -51,7 +51,7 @@
                 <!-- Основные кнопки -->
                 <div class="grid grid-cols-3 gap-3 mb-6">
                     <button id="startButton" class="w-full bg-green-600 hover:bg-green-700 font-semibold py-2 px-4 rounded-lg transition-colors">Запуск</button>
-                    <button id="stopButton" class="w-full bg-yellow-600 hover:bg-yellow-700 font-semibold py-2 px-4 rounded-lg transition-colors">Остановка</button>
+                    <button id="stopButton" class="w-full bg-yellow-600 hover:bg-yellow-700 font-semibold py-2 px-4 rounded-lg transition-colors">Стоп</button>
                     <button id="resetButton" class="w-full bg-red-600 hover:bg-red-700 font-semibold py-2 px-4 rounded-lg transition-colors">Сброс</button>
                 </div>
 
@@ -66,11 +66,6 @@
                         <label for="interactionCoefficient" class="control-label">Коэффициент взаимодействия:</label>
                         <select id="interactionCoefficient" class="w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </select>
-                    </div>
-
-                    <div>
-                        <label for="countLanguagesButton" class="control-label">Анализ языков:</label>
-                        <button id="countLanguagesButton" class="w-full mt-1 bg-blue-600 hover:bg-blue-700 font-semibold py-2 px-4 rounded-lg transition-colors">Посчитать языки</button>
                     </div>
                      <div>
                         <label for="colorThreshold" class="control-label flex justify-between">Порог различия цветов: <span id="colorThresholdValue" class="control-value">30</span></label>
@@ -87,8 +82,8 @@
                         <input id="gridSize" type="range" min="50" max="500" value="200" step="10" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
                     </div>
                     <div>
-                        <label for="density" class="control-label flex justify-between">Плотность населения (%): <span id="densityValue" class="control-value">20</span></label>
-                        <input id="density" type="range" min="1" max="100" value="20" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <label for="initialPopulation" class="control-label flex justify-between">Начальное количество: <span id="initialPopulationValue" class="control-value">100</span></label>
+                        <input id="initialPopulation" type="range" min="1" max="1000" value="100" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
                     </div>
                      <div>
                         <label for="birthProbability" class="control-label flex justify-between">Вероятность рождения: <span id="birthProbabilityValue" class="control-value">0.05</span></label>
@@ -110,15 +105,33 @@
                         <label for="interactionFrequency" class="control-label flex justify-between">Частота взаимодействий: <span id="interactionFrequencyValue" class="control-value">0.1</span></label>
                         <input id="interactionFrequency" type="range" min="0.01" max="1" value="0.1" step="0.01" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
                     </div>
+                    <!-- Новые ползунки -->
+                    <div>
+                        <label for="mutationProbability" class="control-label flex justify-between">Вероятность мутации: <span id="mutationProbabilityValue" class="control-value">0.01</span></label>
+                        <input id="mutationProbability" type="range" min="0" max="0.2" value="0.01" step="0.005" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div>
+                        <label for="genesisRate" class="control-label flex justify-between">Шанс зарождения языка: <span id="genesisRateValue" class="control-value">0.001</span></label>
+                        <input id="genesisRate" type="range" min="0" max="0.01" value="0.001" step="0.0005" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div>
+                        <label for="resistance" class="control-label flex justify-between">Сопротивление изменениям: <span id="resistanceValue" class="control-value">0</span></label>
+                        <input id="resistance" type="range" min="0" max="1" value="0" step="0.05" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div>
+                        <label for="migrationProbability" class="control-label flex justify-between">Вероятность миграции: <span id="migrationProbabilityValue" class="control-value">0.05</span></label>
+                        <input id="migrationProbability" type="range" min="0" max="0.5" value="0.05" step="0.01" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div>
+                        <label for="forgettingProbability" class="control-label flex justify-between">Вероятность забвения: <span id="forgettingProbabilityValue" class="control-value">0</span></label>
+                        <input id="forgettingProbability" type="range" min="0" max="0.01" value="0" step="0.0005" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Область моделирования и статистики -->
         <div class="lg:col-span-2 order-1 lg:order-2 flex flex-col gap-6">
-            <div class="relative w-full aspect-square bg-black rounded-xl border-2 border-gray-700 overflow-hidden">
-                <canvas id="simulationCanvas" class="absolute top-0 left-0 w-full h-full"></canvas>
-            </div>
             <div class="controls-card p-6 rounded-xl shadow-lg">
                  <h3 class="text-xl font-bold mb-4 text-center text-blue-400">Статистика</h3>
                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
@@ -138,6 +151,9 @@
                      </div>
                  </div>
             </div>
+            <div class="relative w-full aspect-square bg-gray-800 rounded-xl border-2 border-gray-700 overflow-hidden">
+                <canvas id="simulationCanvas" class="absolute top-0 left-0 w-full h-full"></canvas>
+            </div>
         </div>
     </div>
 
@@ -150,18 +166,22 @@
         const startButton = document.getElementById('startButton');
         const stopButton = document.getElementById('stopButton');
         const resetButton = document.getElementById('resetButton');
-        const countLanguagesButton = document.getElementById('countLanguagesButton');
-
+        
         const speedSlider = document.getElementById('speedSlider');
         const interactionCoefficientSelect = document.getElementById('interactionCoefficient');
         const colorThresholdSlider = document.getElementById('colorThreshold');
         const gridSizeSlider = document.getElementById('gridSize');
-        const densitySlider = document.getElementById('density');
+        const initialPopulationSlider = document.getElementById('initialPopulation');
         const birthProbabilitySlider = document.getElementById('birthProbability');
         const deathProbabilitySlider = document.getElementById('deathProbability');
         const lifespanSlider = document.getElementById('lifespan');
         const interactionRadiusSlider = document.getElementById('interactionRadius');
         const interactionFrequencySlider = document.getElementById('interactionFrequency');
+        const mutationProbabilitySlider = document.getElementById('mutationProbability');
+        const genesisRateSlider = document.getElementById('genesisRate');
+        const resistanceSlider = document.getElementById('resistance');
+        const migrationProbabilitySlider = document.getElementById('migrationProbability');
+        const forgettingProbabilitySlider = document.getElementById('forgettingProbability');
 
         const populationCountEl = document.getElementById('populationCount');
         const languageCountEl = document.getElementById('languageCount');
@@ -212,40 +232,52 @@
                 readSettings();
                 resetSimulation();
             });
-            countLanguagesButton.addEventListener('click', analyzeLanguages);
 
             // Обновление значений в реальном времени
-            speedSlider.addEventListener('input', (e) => {
+            speedSlider.addEventListener('input', e => {
                 settings.speed = parseInt(e.target.value);
                 document.getElementById('speedValue').textContent = e.target.value;
             });
-            colorThresholdSlider.addEventListener('input', (e) => {
+            colorThresholdSlider.addEventListener('input', e => {
                 settings.colorThreshold = parseInt(e.target.value);
                 document.getElementById('colorThresholdValue').textContent = e.target.value;
+            });
+            interactionCoefficientSelect.addEventListener('change', () => {
+                 settings.coefficientIndex = parseInt(interactionCoefficientSelect.value);
             });
 
             // Настройки, требующие сброса
             gridSizeSlider.addEventListener('input', e => document.getElementById('gridSizeValue').textContent = `${e.target.value}x${e.target.value}`);
-            densitySlider.addEventListener('input', e => document.getElementById('densityValue').textContent = e.target.value);
+            initialPopulationSlider.addEventListener('input', e => document.getElementById('initialPopulationValue').textContent = e.target.value);
             birthProbabilitySlider.addEventListener('input', e => document.getElementById('birthProbabilityValue').textContent = parseFloat(e.target.value).toFixed(2));
             deathProbabilitySlider.addEventListener('input', e => document.getElementById('deathProbabilityValue').textContent = parseFloat(e.target.value).toFixed(2));
             lifespanSlider.addEventListener('input', e => document.getElementById('lifespanValue').textContent = e.target.value);
             interactionRadiusSlider.addEventListener('input', e => document.getElementById('interactionRadiusValue').textContent = e.target.value);
             interactionFrequencySlider.addEventListener('input', e => document.getElementById('interactionFrequencyValue').textContent = parseFloat(e.target.value).toFixed(2));
+            mutationProbabilitySlider.addEventListener('input', e => document.getElementById('mutationProbabilityValue').textContent = parseFloat(e.target.value).toFixed(3));
+            genesisRateSlider.addEventListener('input', e => document.getElementById('genesisRateValue').textContent = parseFloat(e.target.value).toFixed(4));
+            resistanceSlider.addEventListener('input', e => document.getElementById('resistanceValue').textContent = parseFloat(e.target.value).toFixed(2));
+            migrationProbabilitySlider.addEventListener('input', e => document.getElementById('migrationProbabilityValue').textContent = parseFloat(e.target.value).toFixed(2));
+            forgettingProbabilitySlider.addEventListener('input', e => document.getElementById('forgettingProbabilityValue').textContent = parseFloat(e.target.value).toFixed(4));
         }
 
         function readSettings() {
             settings = {
                 speed: parseInt(speedSlider.value),
                 gridSize: parseInt(gridSizeSlider.value),
-                density: parseInt(densitySlider.value) / 100,
+                initialPopulation: parseInt(initialPopulationSlider.value),
                 birthProbability: parseFloat(birthProbabilitySlider.value),
                 deathProbability: parseFloat(deathProbabilitySlider.value),
                 maxLifespan: parseInt(lifespanSlider.value),
                 interactionRadius: parseInt(interactionRadiusSlider.value),
                 interactionFrequency: parseFloat(interactionFrequencySlider.value),
                 colorThreshold: parseInt(colorThresholdSlider.value),
-                coefficientIndex: parseInt(interactionCoefficientSelect.value)
+                coefficientIndex: parseInt(interactionCoefficientSelect.value),
+                mutationProbability: parseFloat(mutationProbabilitySlider.value),
+                genesisRate: parseFloat(genesisRateSlider.value),
+                resistance: parseFloat(resistanceSlider.value),
+                migrationProbability: parseFloat(migrationProbabilitySlider.value),
+                forgettingProbability: parseFloat(forgettingProbabilitySlider.value),
             };
         }
 
@@ -257,8 +289,8 @@
             canvas.width = settings.gridSize;
             canvas.height = settings.gridSize;
 
-            const totalPixels = settings.gridSize * settings.gridSize;
-            const initialPopulationCount = Math.floor(totalPixels * settings.density);
+            const maxPopulation = settings.gridSize * settings.gridSize;
+            const initialPopulationCount = Math.min(settings.initialPopulation, maxPopulation);
             
             const occupied = new Set();
 
@@ -280,17 +312,12 @@
 
             drawPopulation();
             updateStats();
-            languageCountEl.textContent = '0';
-            languageDistributionEl.innerHTML = '';
         }
 
         function startSimulation() {
             if (isRunning) return;
             isRunning = true;
-            readSettings(); // Считываем коэффициенты перед запуском
-            interactionCoefficientSelect.addEventListener('change', () => {
-                 settings.coefficientIndex = parseInt(interactionCoefficientSelect.value);
-            });
+            readSettings(); 
             animationFrameId = requestAnimationFrame(simulationLoop);
         }
 
@@ -308,27 +335,30 @@
             if (frameCounter >= (61 - settings.speed)) {
                 frameCounter = 0;
                 
-                handleInteractions();
                 handleLifecycle();
+                handleInteractions();
                 
                 drawPopulation();
                 updateStats();
+                analyzeLanguages();
             }
 
             animationFrameId = requestAnimationFrame(simulationLoop);
         }
 
         function drawPopulation() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
             const imageData = ctx.createImageData(canvas.width, canvas.height);
             const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = 255; data[i + 1] = 255; data[i + 2] = 255; data[i + 3] = 255;
+            }
 
             for (const individual of population) {
                 const index = (individual.y * canvas.width + individual.x) * 4;
                 data[index] = individual.color.r;
                 data[index + 1] = individual.color.g;
                 data[index + 2] = individual.color.b;
-                data[index + 3] = 255;
             }
             ctx.putImageData(imageData, 0, 0);
         }
@@ -337,22 +367,42 @@
             const occupied = new Set(population.map(p => `${p.x},${p.y}`));
             const nextPopulation = [];
 
-            // Смерть и старение
+            // Старение, смерть, миграция, забвение
             for (const individual of population) {
                 individual.age++;
                 if (individual.age > settings.maxLifespan || Math.random() < settings.deathProbability) {
                     occupied.delete(`${individual.x},${individual.y}`);
-                } else {
-                    nextPopulation.push(individual);
+                    continue;
                 }
+                if (Math.random() < settings.forgettingProbability) {
+                    individual.color = { r: 0, g: 0, b: 0 };
+                }
+                if (Math.random() < settings.migrationProbability) {
+                    const neighbors = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+                    const emptyNeighbors = [];
+                    for (const [dx, dy] of neighbors) {
+                        const nx = individual.x + dx;
+                        const ny = individual.y + dy;
+                        if (nx >= 0 && nx < settings.gridSize && ny >= 0 && ny < settings.gridSize && !occupied.has(`${nx},${ny}`)) {
+                            emptyNeighbors.push({x: nx, y: ny});
+                        }
+                    }
+                    if (emptyNeighbors.length > 0) {
+                        const newPos = emptyNeighbors[Math.floor(Math.random() * emptyNeighbors.length)];
+                        occupied.delete(`${individual.x},${individual.y}`);
+                        individual.x = newPos.x;
+                        individual.y = newPos.y;
+                        occupied.add(`${individual.x},${individual.y}`);
+                    }
+                }
+                nextPopulation.push(individual);
             }
             
             // Рождение
-            const birthCount = Math.floor(population.length * settings.birthProbability);
+            const birthCount = Math.floor(nextPopulation.length * settings.birthProbability);
             for(let i = 0; i < birthCount; i++) {
-                if (occupied.size >= canvas.width * canvas.height) break; // Поле заполнено
-                let x, y, key;
-                let attempts = 0;
+                if (occupied.size >= canvas.width * canvas.height) break;
+                let x, y, key, attempts = 0;
                 do {
                     x = Math.floor(Math.random() * settings.gridSize);
                     y = Math.floor(Math.random() * settings.gridSize);
@@ -362,64 +412,61 @@
 
                 if (!occupied.has(key)) {
                     occupied.add(key);
-                    nextPopulation.push({
-                        x, y,
-                        color: { r: 0, g: 0, b: 0 },
-                        age: 0
-                    });
+                    nextPopulation.push({ x, y, color: { r: 0, g: 0, b: 0 }, age: 0 });
                 }
             }
-
             population = nextPopulation;
         }
 
         function handleInteractions() {
             if (Math.random() > settings.interactionFrequency) return;
-
-            // Для производительности создаем карту для быстрого поиска
             const populationMap = new Map(population.map(p => [`${p.x},${p.y}`, p]));
 
             for (const individual1 of population) {
-                // Первый язык появляется спонтанно, если его нет
-                if (individual1.color.r === 0 && individual1.color.g === 0 && individual1.color.b === 0 && Math.random() < 0.001) {
-                    individual1.color = {
-                        r: Math.floor(Math.random() * 256),
-                        g: Math.floor(Math.random() * 256),
-                        b: Math.floor(Math.random() * 256)
-                    };
-                    continue; // Переходим к следующему
+                if (individual1.color.r === 0 && individual1.color.g === 0 && individual1.color.b === 0 && Math.random() < settings.genesisRate) {
+                    individual1.color = { r: Math.floor(Math.random() * 256), g: Math.floor(Math.random() * 256), b: Math.floor(Math.random() * 256) };
+                    continue;
                 }
 
                 const neighbors = [];
                 for (let dx = -settings.interactionRadius; dx <= settings.interactionRadius; dx++) {
                     for (let dy = -settings.interactionRadius; dy <= settings.interactionRadius; dy++) {
                         if (dx === 0 && dy === 0) continue;
-                        const nx = individual1.x + dx;
-                        const ny = individual1.y + dy;
-                        const key = `${nx},${ny}`;
-                        if (populationMap.has(key)) {
-                            neighbors.push(populationMap.get(key));
-                        }
+                        const key = `${individual1.x + dx},${individual1.y + dy}`;
+                        if (populationMap.has(key)) neighbors.push(populationMap.get(key));
                     }
                 }
 
                 if (neighbors.length > 0) {
                     const individual2 = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    if (individual2.color.r === 0 && individual2.color.g === 0 && individual2.color.b === 0) continue;
                     
-                    // Взаимодействие происходит только если у второго есть язык
-                    if (individual2.color.r !== 0 || individual2.color.g !== 0 || individual2.color.b !== 0) {
-                        const coef = interactionCoefficients[settings.coefficientIndex];
-                        const c1 = individual1.color;
-                        const c2 = individual2.color;
+                    if (Math.random() < settings.resistance) continue;
 
-                        const newColor = {
-                            r: Math.floor(c1.r * coef.c1 + c2.r * coef.c2),
-                            g: Math.floor(c1.g * coef.c1 + c2.g * coef.c2),
-                            b: Math.floor(c1.b * coef.c1 + c2.b * coef.c2)
-                        };
+                    const coef = interactionCoefficients[settings.coefficientIndex];
+                    const c1 = individual1.color;
+                    const c2 = individual2.color;
 
-                        individual1.color = newColor;
-                        individual2.color = newColor;
+                    let newR = c1.r * coef.c1 + c2.r * coef.c2;
+                    let newG = c1.g * coef.c1 + c2.g * coef.c2;
+                    let newB = c1.b * coef.c1 + c2.b * coef.c2;
+
+                    if (Math.random() < settings.mutationProbability) {
+                        const mutationAmount = 20;
+                        newR += Math.random() * mutationAmount * 2 - mutationAmount;
+                        newG += Math.random() * mutationAmount * 2 - mutationAmount;
+                        newB += Math.random() * mutationAmount * 2 - mutationAmount;
+                    }
+
+                    const newColor = {
+                        r: Math.max(0, Math.min(255, Math.floor(newR))),
+                        g: Math.max(0, Math.min(255, Math.floor(newG))),
+                        b: Math.max(0, Math.min(255, Math.floor(newB)))
+                    };
+
+                    individual1.color = newColor;
+                    if (Math.random() >= settings.resistance) {
+                       individual2.color = newColor;
                     }
                 }
             }
@@ -445,8 +492,7 @@
                 return;
             }
 
-            const distinctLanguages = []; // { color: {r,g,b}, count: number }
-
+            const distinctLanguages = [];
             for (const individual of nonBlackPopulation) {
                 let found = false;
                 for (const lang of distinctLanguages) {
@@ -476,7 +522,7 @@
                 const bar = document.createElement('div');
                 const percentage = (lang.count / total) * 100;
                 bar.style.height = `${percentage}%`;
-                bar.style.width = '10px'; // Фиксированная ширина для наглядности
+                bar.style.width = '10px';
                 bar.style.flexShrink = '0';
                 bar.style.backgroundColor = `rgb(${lang.color.r}, ${lang.color.g}, ${lang.color.b})`;
                 bar.title = `RGB(${lang.color.r}, ${lang.color.g}, ${lang.color.b})\nКоличество: ${lang.count} (${percentage.toFixed(1)}%)`;
