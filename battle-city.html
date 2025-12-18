@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Battle City - Процедурные карты</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        body {
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+        }
+        
+        #gameContainer {
+            position: relative;
+            background: #636363;
+            padding: 8px;
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: #000;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        
+        #controls {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 5px;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            margin-top: 10px;
+            width: 90%;
+            max-width: 350px;
+        }
+        
+        .ctrl-btn {
+            width: 60px;
+            height: 60px;
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        
+        .ctrl-btn:active {
+            transform: scale(0.9);
+        }
+        
+        .dpad-btn {
+            background: linear-gradient(145deg, #4a4a4a, #2a2a2a);
+            color: #fff;
+            border: 3px solid #555;
+        }
+        
+        .fire-btn {
+            background: linear-gradient(145deg, #c41e3a, #8b0000);
+            color: #fff;
+            border: 3px solid #ff4444;
+            width: 80px;
+            height: 80px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        #btnUp { grid-column: 2; grid-row: 1; }
+        #btnLeft { grid-column: 1; grid-row: 2; }
+        #btnRight { grid-column: 3; grid-row: 2; }
+        #btnDown { grid-column: 2; grid-row: 3; }
+        #btnFire { grid-column: 5; grid-row: 2; }
+        
+        #hud {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 420px;
+            padding: 10px;
+            color: #fff;
+            font-size: 12px;
+        }
+        
+        .hud-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        #startScreen, #gameOverScreen, #victoryScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            color: #fff;
+        }
+        
+        #startScreen h1, #victoryScreen h1 {
+            color: #c41e3a;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        #startScreen p, #victoryScreen p {
+            color: #ff8c00;
+            font-size: 14px;
+            margin: 10px;
+            text-align: center;
+        }
+        
+        .start-btn {
+            background: #c41e3a;
+            color: #fff;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-family: inherit;
+        }
+        
+        .start-btn:hover {
+            background: #e02050;
+        }
+        
+        #gameOverScreen h1 {
+            color: #c41e3a;
+            font-size: 32px;
+        }
+        
+        #victoryScreen h1 {
+            color: #00cc00;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        #stageBanner {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #636363;
+            color: #000;
+            padding: 20px 60px;
+            font-size: 24px;
+            font-weight: bold;
+            z-index: 50;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="startScreen">
+        <h1>🎮 BATTLE CITY 🎮</h1>
+        <p>PROCEDURAL GENERATION</p>
+        <p style="font-size: 10px; color: #888;">Каждая карта уникальна!</p>
+        <button class="start-btn" onclick="startGame()">START GAME</button>
+    </div>
+    
+    <div id="gameOverScreen" class="hidden">
+        <h1>GAME OVER</h1>
+        <p>Stage: <span id="finalStage">1</span></p>
+        <button class="start-btn" onclick="restartGame()">TRY AGAIN</button>
+    </div>
+    
+    <div id="victoryScreen" class="hidden">
+        <h1>🏆 VICTORY! 🏆</h1>
+        <p>Stage <span id="victoryStage">1</span> Complete!</p>
+        <button class="start-btn" onclick="nextStage()">NEXT STAGE</button>
+    </div>
+    
+    <div id="stageBanner">STAGE 1</div>
+    
+    <div id="hud">
+        <div class="hud-item">❤️ <span id="lives">3</span></div>
+        <div class="hud-item">🎯 STAGE <span id="stage">1</span></div>
+        <div class="hud-item">👾 <span id="enemies">20</span></div>
+    </div>
+    
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    
+    <div id="controls">
+        <button class="ctrl-btn dpad-btn" id="btnUp">▲</button>
+        <button class="ctrl-btn dpad-btn" id="btnLeft">◀</button>
+        <button class="ctrl-btn dpad-btn" id="btnRight">▶</button>
+        <button class="ctrl-btn dpad-btn" id="btnDown">▼</button>
+        <button class="ctrl-btn fire-btn" id="btnFire">FIRE</button>
+    </div>
+
+    <script>
+        // ===== КОНФИГУРАЦИЯ =====
+        const TILE_SIZE = 16;
+        const MAP_WIDTH = 26;
+        const MAP_HEIGHT = 26;
+        const CANVAS_WIDTH = MAP_WIDTH * TILE_SIZE;
+        const CANVAS_HEIGHT = MAP_HEIGHT * TILE_SIZE;
+        
+        // Типы тайлов
+        const EMPTY = 0;
+        const BRICK = 1;
+        const STEEL = 2;
+        const WATER = 3;
+        const GRASS = 4;
+        const ICE = 5;
+        const BASE = 6;
+        const BASE_DESTROYED = 7;
+        
+        // Цвета
+        const COLORS = {
+            black: '#000000',
+            brick: '#8b4513',
+            brickLight: '#cd853f',
+            steel: '#a0a0a0',
+            steelLight: '#c0c0c0',
+            water: '#0000aa',
+            waterLight: '#0055ff',
+            grass: '#00aa00',
+            ice: '#aaccff',
+            yellow: '#ffcc00',
+            orange: '#ff8800',
+            white: '#ffffff'
+        };
+        
+        // ===== CANVAS =====
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            const maxWidth = Math.min(window.innerWidth - 20, 416);
+            const scale = maxWidth / CANVAS_WIDTH;
+            canvas.width = CANVAS_WIDTH;
+            canvas.height = CANVAS_HEIGHT;
+            canvas.style.width = CANVAS_WIDTH * scale + 'px';
+            canvas.style.height = CANVAS_HEIGHT * scale + 'px';
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // ===== ГЕНЕРАТОР СЛУЧАЙНЫХ ЧИСЕЛ =====
+        class SeededRandom {
+            constructor(seed) {
+                this.seed = seed % 2147483647;
+                if (this.seed <= 0) this.seed += 2147483646;
+            }
+            
+            next() {
+                this.seed = (this.seed * 16807) % 2147483647;
+                return (this.seed - 1) / 2147483646;
+            }
+            
+            nextInt(min, max) {
+                return Math.floor(this.next() * (max - min + 1)) + min;
+            }
+            
+            nextBool(probability = 0.5) {
+                return this.next() < probability;
+            }
+        }
+        
+        // ===== СОСТОЯНИЕ ИГРЫ =====
+        let gameMap = [];
+        let player = null;
+        let enemies = [];
+        let bullets = [];
+        let explosions = [];
+        let powerUps = [];
+        let gameRunning = false;
+        let playerLives = 3;
+        let enemiesRemaining = 20;
+        let enemiesOnField = 0;
+        let maxEnemiesOnField = 4;
+        let spawnTimer = 0;
+        let spawnDelay = 200;
+        let baseDestroyed = false;
+        let playerInvincible = 0;
+        let freezeTimer = 0;
+        let animationFrame = 0;
+        let currentStage = 1;
+        
+        const enemySpawnPoints = [
+            {x: 0, y: 0},
+            {x: 12, y: 0},
+            {x: 24, y: 0}
+        ];
+        let currentSpawnPoint = 0;
+        
+        // ===== ГЕНЕРАТОР КАРТ =====
+        class MapGenerator {
+            constructor(seed, stage) {
+                this.rng = new SeededRandom(seed);
+                this.stage = stage;
+                this.map = [];
+            }
+            
+            generate() {
+                // Инициализация пустой карты
+                this.map = [];
+                for (let y = 0; y < MAP_HEIGHT; y++) {
+                    this.map[y] = new Array(MAP_WIDTH).fill(EMPTY);
+                }
+                
+                // Размещаем базу
+                this.placeBase();
+                
+                // Генерируем препятствия (простой и надёжный метод)
+                this.generateSimpleObstacles();
+                
+                // Добавляем воду, траву, лёд
+                this.addEnvironment();
+                
+                // Очищаем спавны и пути
+                this.clearSpawnAreas();
+                this.ensurePaths();
+                
+                // Укрепляем базу кирпичами
+                this.fortifyBase();
+                
+                return this.map;
+            }
+            
+            placeBase() {
+                this.map[24][12] = BASE;
+                this.map[24][13] = BASE;
+                this.map[25][12] = BASE;
+                this.map[25][13] = BASE;
+            }
+            
+            fortifyBase() {
+                const positions = [
+                    [11, 23], [12, 23], [13, 23], [14, 23],
+                    [11, 24], [14, 24],
+                    [11, 25], [14, 25]
+                ];
+                for (const [x, y] of positions) {
+                    if (this.map[y][x] === EMPTY) {
+                        this.map[y][x] = BRICK;
+                    }
+                }
+            }
+            
+            generateSimpleObstacles() {
+                // Количество групп препятствий зависит от уровня
+                const numGroups = 12 + Math.min(this.stage, 10);
+                
+                for (let i = 0; i < numGroups; i++) {
+                    const groupX = this.rng.nextInt(1, MAP_WIDTH - 4);
+                    const groupY = this.rng.nextInt(3, MAP_HEIGHT - 6);
+                    const groupW = this.rng.nextInt(2, 4);
+                    const groupH = this.rng.nextInt(2, 4);
+                    
+                    // Тип препятствия
+                    const isSteel = this.rng.nextBool(0.1 + this.stage * 0.01);
+                    const tile = isSteel ? STEEL : BRICK;
+                    
+                    // Паттерн
+                    const pattern = this.rng.nextInt(0, 3);
+                    
+                    for (let dy = 0; dy < groupH; dy++) {
+                        for (let dx = 0; dx < groupW; dx++) {
+                            const x = groupX + dx;
+                            const y = groupY + dy;
+                            
+                            if (!this.canPlace(x, y)) continue;
+                            
+                            let place = false;
+                            switch (pattern) {
+                                case 0: // Полный блок
+                                    place = true;
+                                    break;
+                                case 1: // Только края
+                                    place = dx === 0 || dx === groupW - 1 || dy === 0 || dy === groupH - 1;
+                                    break;
+                                case 2: // Шахматный
+                                    place = (dx + dy) % 2 === 0;
+                                    break;
+                                case 3: // L-образный
+                                    place = dx === 0 || dy === groupH - 1;
+                                    break;
+                            }
+                            
+                            if (place) {
+                                this.map[y][x] = tile;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            addEnvironment() {
+                // Вода (1-2 лужи)
+                const numWater = this.rng.nextInt(0, 2);
+                for (let i = 0; i < numWater; i++) {
+                    const wx = this.rng.nextInt(4, MAP_WIDTH - 6);
+                    const wy = this.rng.nextInt(6, MAP_HEIGHT - 8);
+                    const ww = this.rng.nextInt(2, 3);
+                    const wh = this.rng.nextInt(2, 3);
+                    
+                    for (let dy = 0; dy < wh; dy++) {
+                        for (let dx = 0; dx < ww; dx++) {
+                            const x = wx + dx;
+                            const y = wy + dy;
+                            if (this.canPlace(x, y)) {
+                                this.map[y][x] = WATER;
+                            }
+                        }
+                    }
+                }
+                
+                // Трава (2-4 участка)
+                const numGrass = this.rng.nextInt(2, 4);
+                for (let i = 0; i < numGrass; i++) {
+                    const gx = this.rng.nextInt(2, MAP_WIDTH - 5);
+                    const gy = this.rng.nextInt(4, MAP_HEIGHT - 6);
+                    const gs = this.rng.nextInt(2, 3);
+                    
+                    for (let dy = 0; dy < gs; dy++) {
+                        for (let dx = 0; dx < gs; dx++) {
+                            const x = gx + dx;
+                            const y = gy + dy;
+                            if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT) {
+                                if (this.map[y][x] === EMPTY) {
+                                    this.map[y][x] = GRASS;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Лёд (иногда)
+                if (this.rng.nextBool(0.4)) {
+                    const ix = this.rng.nextInt(5, MAP_WIDTH - 7);
+                    const iy = this.rng.nextInt(8, MAP_HEIGHT - 10);
+                    const is = this.rng.nextInt(2, 3);
+                    
+                    for (let dy = 0; dy < is; dy++) {
+                        for (let dx = 0; dx < is; dx++) {
+                            const x = ix + dx;
+                            const y = iy + dy;
+                            if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT) {
+                                if (this.map[y][x] === EMPTY) {
+                                    this.map[y][x] = ICE;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            clearSpawnAreas() {
+                // Очистка спавнов врагов (3x3)
+                for (const spawn of enemySpawnPoints) {
+                    for (let dy = 0; dy < 3; dy++) {
+                        for (let dx = 0; dx < 3; dx++) {
+                            const x = spawn.x + dx;
+                            const y = spawn.y + dy;
+                            if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT) {
+                                if (this.map[y][x] !== BASE) {
+                                    this.map[y][x] = EMPTY;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Очистка спавна игрока (4x3)
+                for (let dy = 0; dy < 3; dy++) {
+                    for (let dx = 0; dx < 4; dx++) {
+                        const x = 8 + dx;
+                        const y = 23 + dy;
+                        if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT) {
+                            if (this.map[y][x] !== BASE) {
+                                this.map[y][x] = EMPTY;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            ensurePaths() {
+                // Прокладываем вертикальные коридоры от спавнов вниз
+                const corridorPositions = [1, 6, 12, 18, 24];
+                
+                for (const cx of corridorPositions) {
+                    for (let y = 0; y < MAP_HEIGHT - 3; y++) {
+                        // Оставляем некоторые блоки для разнообразия
+                        if (this.rng.nextBool(0.15)) continue;
+                        
+                        for (let dx = 0; dx < 2; dx++) {
+                            const x = cx + dx;
+                            if (x >= 0 && x < MAP_WIDTH) {
+                                const tile = this.map[y][x];
+                                if (tile === BRICK || tile === STEEL || tile === WATER) {
+                                    this.map[y][x] = EMPTY;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Горизонтальные проходы
+                const rowPositions = [4, 10, 16, 21];
+                
+                for (const ry of rowPositions) {
+                    for (let x = 0; x < MAP_WIDTH; x++) {
+                        if (this.rng.nextBool(0.2)) continue;
+                        
+                        for (let dy = 0; dy < 2; dy++) {
+                            const y = ry + dy;
+                            if (y >= 0 && y < MAP_HEIGHT - 3) {
+                                const tile = this.map[y][x];
+                                if (tile === BRICK || tile === STEEL || tile === WATER) {
+                                    this.map[y][x] = EMPTY;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            canPlace(x, y) {
+                if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false;
+                
+                // Не размещать около базы
+                if (y >= 22 && x >= 10 && x <= 15) return false;
+                
+                // Не размещать в спавнах врагов
+                for (const spawn of enemySpawnPoints) {
+                    if (x >= spawn.x && x < spawn.x + 3 && y >= spawn.y && y < spawn.y + 3) {
+                        return false;
+                    }
+                }
+                
+                // Не размещать в спавне игрока
+                if (x >= 7 && x <= 11 && y >= 22) return false;
+                
+                return this.map[y][x] === EMPTY;
+            }
+        }
+        
+        // ===== ФУНКЦИИ КАРТЫ =====
+        function generateMap(stage) {
+            const seed = Date.now() + Math.floor(Math.random() * 100000);
+            const generator = new MapGenerator(seed, stage);
+            gameMap = generator.generate();
+        }
+        
+        function getTile(x, y) {
+            if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return STEEL;
+            return gameMap[y][x];
+        }
+        
+        function setTile(x, y, value) {
+            if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT) {
+                gameMap[y][x] = value;
+            }
+        }
+        
+        // ===== КЛАСС ТАНКА =====
+        class Tank {
+            constructor(x, y, isPlayer = false, type = 0) {
+                this.x = x * TILE_SIZE;
+                this.y = y * TILE_SIZE;
+                this.width = TILE_SIZE * 2;
+                this.height = TILE_SIZE * 2;
+                this.direction = isPlayer ? 0 : 2;
+                
+                // УМЕНЬШЕННЫЕ СКОРОСТИ ВРАГОВ
+                if (isPlayer) {
+                    this.speed = 1.5;
+                } else {
+                    // type: 0=обычный, 1=быстрый, 2=сильный, 3=бронированный
+                    const speeds = [0.7, 1.0, 0.6, 0.5];
+                    this.speed = speeds[type];
+                }
+                
+                this.isPlayer = isPlayer;
+                this.type = type;
+                this.health = type === 3 ? 4 : 1;
+                this.canShoot = true;
+                this.shootCooldown = 0;
+                this.bulletSpeed = isPlayer ? 4 : 2.5;
+                this.moving = false;
+                this.animFrame = 0;
+                this.animTimer = 0;
+                this.onIce = false;
+                this.velocity = {x: 0, y: 0};
+                
+                // ИИ
+                this.aiTimer = 0;
+                this.aiDecisionTime = 90;
+                this.targetDirection = this.direction;
+                this.stuckTimer = 0;
+                this.lastX = this.x;
+                this.lastY = this.y;
+            }
+            
+            update() {
+                if (this.shootCooldown > 0) this.shootCooldown--;
+                if (this.shootCooldown === 0) this.canShoot = true;
+                
+                if (this.moving) {
+                    this.animTimer++;
+                    if (this.animTimer >= 4) {
+                        this.animTimer = 0;
+                        this.animFrame = (this.animFrame + 1) % 2;
+                    }
+                }
+                
+                // Проверка льда
+                const tileX = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+                const tileY = Math.floor((this.y + this.height / 2) / TILE_SIZE);
+                this.onIce = getTile(tileX, tileY) === ICE;
+                
+                // ИИ врагов
+                if (!this.isPlayer && freezeTimer <= 0) {
+                    this.updateAI();
+                }
+                
+                // Скольжение по льду
+                if (this.onIce && !this.moving) {
+                    this.slide();
+                }
+            }
+            
+            slide() {
+                if (Math.abs(this.velocity.x) > 0.1 || Math.abs(this.velocity.y) > 0.1) {
+                    const newX = this.x + this.velocity.x;
+                    const newY = this.y + this.velocity.y;
+                    
+                    if (!this.checkMapCollision(newX, newY) && !this.checkTankCollision(newX, newY)) {
+                        this.x = Math.max(0, Math.min(newX, CANVAS_WIDTH - this.width));
+                        this.y = Math.max(0, Math.min(newY, CANVAS_HEIGHT - this.height));
+                    }
+                    
+                    this.velocity.x *= 0.95;
+                    this.velocity.y *= 0.95;
+                }
+            }
+            
+            updateAI() {
+                this.aiTimer++;
+                
+                // Проверка застревания
+                const moved = Math.abs(this.x - this.lastX) > 0.5 || Math.abs(this.y - this.lastY) > 0.5;
+                if (!moved) {
+                    this.stuckTimer++;
+                } else {
+                    this.stuckTimer = 0;
+                }
+                this.lastX = this.x;
+                this.lastY = this.y;
+                
+                // Смена направления если застрял
+                if (this.stuckTimer > 40) {
+                    this.targetDirection = Math.floor(Math.random() * 4);
+                    this.stuckTimer = 0;
+                    this.aiTimer = this.aiDecisionTime; // Сразу принять решение
+                }
+                
+                if (this.aiTimer >= this.aiDecisionTime) {
+                    this.aiTimer = 0;
+                    this.aiDecisionTime = 60 + Math.random() * 60;
+                    
+                    const rand = Math.random();
+                    
+                    if (rand < 0.3) {
+                        // Двигаться к базе
+                        const baseX = 12 * TILE_SIZE;
+                        const baseY = 24 * TILE_SIZE;
+                        const dx = baseX - this.x;
+                        const dy = baseY - this.y;
+                        
+                        if (Math.abs(dy) > Math.abs(dx)) {
+                            this.targetDirection = dy > 0 ? 2 : 0;
+                        } else {
+                            this.targetDirection = dx > 0 ? 1 : 3;
+                        }
+                    } else if (rand < 0.5 && player) {
+                        // Двигаться к игроку
+                        const dx = player.x - this.x;
+                        const dy = player.y - this.y;
+                        
+                        if (Math.abs(dx) > Math.abs(dy)) {
+                            this.targetDirection = dx > 0 ? 1 : 3;
+                        } else {
+                            this.targetDirection = dy > 0 ? 2 : 0;
+                        }
+                    } else {
+                        // Случайное направление
+                        this.targetDirection = Math.floor(Math.random() * 4);
+                    }
+                }
+                
+                // Стрельба (реже)
+                if (this.canShoot && Math.random() < 0.015) {
+                    this.shoot();
+                }
+                
+                this.direction = this.targetDirection;
+                this.move(this.direction);
+            }
+            
+            move(direction) {
+                this.direction = direction;
+                this.moving = true;
+                
+                let newX = this.x;
+                let newY = this.y;
+                const actualSpeed = this.onIce ? this.speed * 1.3 : this.speed;
+                
+                switch (direction) {
+                    case 0: newY -= actualSpeed; break;
+                    case 1: newX += actualSpeed; break;
+                    case 2: newY += actualSpeed; break;
+                    case 3: newX -= actualSpeed; break;
+                }
+                
+                newX = Math.max(0, Math.min(newX, CANVAS_WIDTH - this.width));
+                newY = Math.max(0, Math.min(newY, CANVAS_HEIGHT - this.height));
+                
+                if (!this.checkMapCollision(newX, newY) && !this.checkTankCollision(newX, newY)) {
+                    this.x = newX;
+                    this.y = newY;
+                    
+                    if (this.onIce) {
+                        switch (direction) {
+                            case 0: this.velocity.y = -this.speed * 0.5; break;
+                            case 1: this.velocity.x = this.speed * 0.5; break;
+                            case 2: this.velocity.y = this.speed * 0.5; break;
+                            case 3: this.velocity.x = -this.speed * 0.5; break;
+                        }
+                    }
+                }
+            }
+            
+            checkMapCollision(newX, newY) {
+                const startTileX = Math.floor(newX / TILE_SIZE);
+                const startTileY = Math.floor(newY / TILE_SIZE);
+                const endTileX = Math.floor((newX + this.width - 1) / TILE_SIZE);
+                const endTileY = Math.floor((newY + this.height - 1) / TILE_SIZE);
+                
+                for (let ty = startTileY; ty <= endTileY; ty++) {
+                    for (let tx = startTileX; tx <= endTileX; tx++) {
+                        const tile = getTile(tx, ty);
+                        if (tile === BRICK || tile === STEEL || tile === WATER || 
+                            tile === BASE || tile === BASE_DESTROYED) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+            
+            checkTankCollision(newX, newY) {
+                const tanks = this.isPlayer ? enemies : [player, ...enemies.filter(e => e !== this)];
+                
+                for (const tank of tanks) {
+                    if (!tank) continue;
+                    if (newX < tank.x + tank.width &&
+                        newX + this.width > tank.x &&
+                        newY < tank.y + tank.height &&
+                        newY + this.height > tank.y) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            
+            shoot() {
+                if (!this.canShoot) return;
+                
+                this.canShoot = false;
+                this.shootCooldown = this.isPlayer ? 20 : 40; // Враги стреляют реже
+                
+                let bulletX = this.x + this.width / 2 - 2;
+                let bulletY = this.y + this.height / 2 - 2;
+                
+                switch (this.direction) {
+                    case 0: bulletY = this.y - 4; break;
+                    case 1: bulletX = this.x + this.width; break;
+                    case 2: bulletY = this.y + this.height; break;
+                    case 3: bulletX = this.x - 4; break;
+                }
+                
+                bullets.push(new Bullet(bulletX, bulletY, this.direction, this.isPlayer, this.bulletSpeed));
+            }
+            
+            draw() {
+                ctx.save();
+                
+                const colors = ['#888888', '#aaaaaa', '#00aa00', '#aa5500'];
+                const color = this.isPlayer ? COLORS.yellow : colors[this.type];
+                
+                const cx = this.x + this.width / 2;
+                const cy = this.y + this.height / 2;
+                
+                ctx.translate(cx, cy);
+                ctx.rotate(this.direction * Math.PI / 2);
+                ctx.translate(-this.width / 2, -this.height / 2);
+                
+                // Гусеницы
+                ctx.fillStyle = this.isPlayer ? '#997700' : '#555555';
+                ctx.fillRect(0, 0, 6, this.height);
+                ctx.fillRect(this.width - 6, 0, 6, this.height);
+                
+                // Анимация гусениц
+                const trackOffset = this.animFrame * 4;
+                ctx.fillStyle = this.isPlayer ? '#665500' : '#333333';
+                for (let i = -1; i < 4; i++) {
+                    const ty = (i * 8 + trackOffset) % this.height;
+                    ctx.fillRect(0, ty, 6, 2);
+                    ctx.fillRect(this.width - 6, ty, 6, 2);
+                }
+                
+                // Корпус
+                ctx.fillStyle = color;
+                ctx.fillRect(6, 4, this.width - 12, this.height - 8);
+                
+                // Башня
+                ctx.fillStyle = this.isPlayer ? '#ffee00' : '#777777';
+                ctx.fillRect(10, 8, 12, 12);
+                
+                // Ствол
+                ctx.fillRect(13, 0, 6, 12);
+                
+                // Индикатор брони для type 3
+                if (!this.isPlayer && this.type === 3 && this.health > 1) {
+                    ctx.fillStyle = ['#ffff00', '#ffaa00', '#ff5500', '#ff0000'][4 - this.health] || '#ffff00';
+                    ctx.fillRect(12, 10, 8, 2);
+                }
+                
+                ctx.restore();
+                
+                // Щит
+                if (this.isPlayer && playerInvincible > 0) {
+                    ctx.strokeStyle = animationFrame % 10 < 5 ? '#ffffff' : '#00ffff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(this.x + this.width/2, this.y + this.height/2, 18, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+            
+            hit() {
+                this.health--;
+                return this.health <= 0;
+            }
+        }
+        
+        // ===== КЛАСС ПУЛИ =====
+        class Bullet {
+            constructor(x, y, direction, isPlayerBullet, speed = 4) {
+                this.x = x;
+                this.y = y;
+                this.width = 4;
+                this.height = 4;
+                this.direction = direction;
+                this.speed = speed;
+                this.isPlayerBullet = isPlayerBullet;
+                this.active = true;
+            }
+            
+            update() {
+                switch (this.direction) {
+                    case 0: this.y -= this.speed; break;
+                    case 1: this.x += this.speed; break;
+                    case 2: this.y += this.speed; break;
+                    case 3: this.x -= this.speed; break;
+                }
+                
+                if (this.x < 0 || this.x > CANVAS_WIDTH || this.y < 0 || this.y > CANVAS_HEIGHT) {
+                    this.active = false;
+                    createExplosion(this.x, this.y, true);
+                    return;
+                }
+                
+                this.checkMapCollision();
+                this.checkTankCollision();
+            }
+            
+            checkMapCollision() {
+                const tileX = Math.floor((this.x + 2) / TILE_SIZE);
+                const tileY = Math.floor((this.y + 2) / TILE_SIZE);
+                
+                const tile = getTile(tileX, tileY);
+                
+                if (tile === BRICK) {
+                    setTile(tileX, tileY, EMPTY);
+                    this.active = false;
+                    createExplosion(this.x, this.y, true);
+                } else if (tile === STEEL) {
+                    this.active = false;
+                    createExplosion(this.x, this.y, true);
+                } else if (tile === BASE) {
+                    for (let dy = 0; dy < 2; dy++) {
+                        for (let dx = 0; dx < 2; dx++) {
+                            setTile(12 + dx, 24 + dy, BASE_DESTROYED);
+                        }
+                    }
+                    baseDestroyed = true;
+                    this.active = false;
+                    createExplosion(13 * TILE_SIZE, 25 * TILE_SIZE, false);
+                }
+            }
+            
+            checkTankCollision() {
+                if (!this.active) return;
+                
+                if (this.isPlayerBullet) {
+                    for (let i = enemies.length - 1; i >= 0; i--) {
+                        const enemy = enemies[i];
+                        if (this.x < enemy.x + enemy.width &&
+                            this.x + this.width > enemy.x &&
+                            this.y < enemy.y + enemy.height &&
+                            this.y + this.height > enemy.y) {
+                            
+                            this.active = false;
+                            if (enemy.hit()) {
+                                createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, false);
+                                enemies.splice(i, 1);
+                                enemiesOnField--;
+                                
+                                if (Math.random() < 0.15) {
+                                    spawnPowerUp(enemy.x, enemy.y);
+                                }
+                            } else {
+                                createExplosion(this.x, this.y, true);
+                            }
+                            return;
+                        }
+                    }
+                } else {
+                    if (player && playerInvincible <= 0) {
+                        if (this.x < player.x + player.width &&
+                            this.x + this.width > player.x &&
+                            this.y < player.y + player.height &&
+                            this.y + this.height > player.y) {
+                            
+                            this.active = false;
+                            createExplosion(player.x + player.width/2, player.y + player.height/2, false);
+                            playerDeath();
+                            return;
+                        }
+                    }
+                }
+                
+                // Столкновение пуль
+                for (let i = bullets.length - 1; i >= 0; i--) {
+                    const other = bullets[i];
+                    if (other === this || !other.active) continue;
+                    if (this.isPlayerBullet === other.isPlayerBullet) continue;
+                    
+                    if (this.x < other.x + other.width &&
+                        this.x + this.width > other.x &&
+                        this.y < other.y + other.height &&
+                        this.y + this.height > other.y) {
+                        
+                        this.active = false;
+                        other.active = false;
+                        createExplosion(this.x, this.y, true);
+                        return;
+                    }
+                }
+            }
+            
+            draw() {
+                ctx.fillStyle = COLORS.white;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        }
+        
+        // ===== КЛАСС ВЗРЫВА =====
+        class Explosion {
+            constructor(x, y, small = false) {
+                this.x = x;
+                this.y = y;
+                this.frame = 0;
+                this.maxFrames = small ? 8 : 16;
+                this.small = small;
+                this.active = true;
+            }
+            
+            update() {
+                this.frame++;
+                if (this.frame >= this.maxFrames) {
+                    this.active = false;
+                }
+            }
+            
+            draw() {
+                const size = this.small ? 8 + this.frame * 2 : 16 + Math.sin(this.frame * 0.5) * 16;
+                const alpha = 1 - (this.frame / this.maxFrames);
+                
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                
+                ctx.fillStyle = COLORS.orange;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = COLORS.yellow;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, size * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = COLORS.white;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, size * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+        
+        function createExplosion(x, y, small) {
+            explosions.push(new Explosion(x, y, small));
+        }
+        
+        // ===== КЛАСС БОНУСА =====
+        class PowerUp {
+            constructor(x, y, type) {
+                this.x = Math.max(10, Math.min(x, CANVAS_WIDTH - 40));
+                this.y = Math.max(10, Math.min(y, CANVAS_HEIGHT - 60));
+                this.width = 28;
+                this.height = 28;
+                this.type = type;
+                this.timer = 600;
+                this.blinkTimer = 0;
+                this.active = true;
+            }
+            
+            update() {
+                this.timer--;
+                this.blinkTimer++;
+                if (this.timer <= 0) {
+                    this.active = false;
+                }
+                
+                if (player) {
+                    if (this.x < player.x + player.width &&
+                        this.x + this.width > player.x &&
+                        this.y < player.y + player.height &&
+                        this.y + this.height > player.y) {
+                        this.collect();
+                    }
+                }
+            }
+            
+            collect() {
+                this.active = false;
+                
+                switch (this.type) {
+                    case 0: // Щит
+                        playerInvincible = 600;
+                        break;
+                    case 1: // Заморозка
+                        freezeTimer = 600;
+                        break;
+                    case 2: // Укрепление базы
+                        fortifyBase();
+                        break;
+                    case 3: // Улучшение
+                        if (player) player.bulletSpeed = 6;
+                        break;
+                    case 4: // Бомба
+                        for (const enemy of enemies) {
+                            createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, false);
+                        }
+                        enemiesOnField -= enemies.length;
+                        enemies = [];
+                        break;
+                    case 5: // Жизнь
+                        playerLives++;
+                        updateHUD();
+                        break;
+                }
+            }
+            
+            draw() {
+                if (this.timer < 180 && this.blinkTimer % 10 < 5) return;
+                
+                ctx.fillStyle = '#880000';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.fillStyle = '#cc0000';
+                ctx.fillRect(this.x + 2, this.y + 2, this.width - 4, this.height - 4);
+                
+                const labels = ['🛡️', '⏰', '🔧', '⭐', '💣', '❤️'];
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(labels[this.type], this.x + this.width/2, this.y + this.height/2);
+            }
+        }
+        
+        function spawnPowerUp(x, y) {
+            const type = Math.floor(Math.random() * 6);
+            powerUps.push(new PowerUp(x, y, type));
+        }
+        
+        function fortifyBase() {
+            const positions = [
+                [11, 23], [12, 23], [13, 23], [14, 23],
+                [11, 24], [14, 24],
+                [11, 25], [14, 25]
+            ];
+            
+            for (const [x, y] of positions) {
+                if (getTile(x, y) === BRICK || getTile(x, y) === EMPTY) {
+                    setTile(x, y, STEEL);
+                }
+            }
+            
+            setTimeout(() => {
+                for (const [x, y] of positions) {
+                    if (getTile(x, y) === STEEL) {
+                        setTile(x, y, BRICK);
+                    }
+                }
+            }, 12000);
+        }
+        
+        // ===== ОТРИСОВКА =====
+        function drawTile(x, y, type) {
+            const px = x * TILE_SIZE;
+            const py = y * TILE_SIZE;
+            
+            switch (type) {
+                case BRICK:
+                    ctx.fillStyle = COLORS.brick;
+                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = COLORS.brickLight;
+                    for (let row = 0; row < 4; row++) {
+                        const offset = (row % 2) * 4;
+                        for (let col = 0; col < 4; col++) {
+                            ctx.fillRect(px + col * 4 + offset, py + row * 4, 3, 3);
+                        }
+                    }
+                    break;
+                    
+                case STEEL:
+                    ctx.fillStyle = COLORS.steel;
+                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = COLORS.steelLight;
+                    ctx.fillRect(px + 1, py + 1, 6, 6);
+                    ctx.fillRect(px + 9, py + 1, 6, 6);
+                    ctx.fillRect(px + 1, py + 9, 6, 6);
+                    ctx.fillRect(px + 9, py + 9, 6, 6);
+                    break;
+                    
+                case WATER:
+                    ctx.fillStyle = animationFrame % 30 < 15 ? COLORS.water : COLORS.waterLight;
+                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = animationFrame % 30 < 15 ? COLORS.waterLight : COLORS.water;
+                    for (let i = 0; i < 3; i++) {
+                        ctx.fillRect(px + (i * 6 + (animationFrame/3) % 6), py + 4, 4, 2);
+                        ctx.fillRect(px + (i * 6 + (animationFrame/3 + 3) % 6), py + 10, 4, 2);
+                    }
+                    break;
+                    
+                case GRASS:
+                    ctx.fillStyle = COLORS.grass;
+                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = '#006600';
+                    for (let i = 0; i < 8; i++) {
+                        ctx.fillRect(px + (i % 4) * 4 + 1, py + Math.floor(i / 4) * 8 + 1, 2, 5);
+                    }
+                    break;
+                    
+                case ICE:
+                    ctx.fillStyle = COLORS.ice;
+                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.globalAlpha = 0.4;
+                    ctx.fillRect(px + 2, py + 2, 4, 4);
+                    ctx.fillRect(px + 10, py + 8, 4, 4);
+                    ctx.globalAlpha = 1;
+                    break;
+                    
+                case BASE:
+                    ctx.fillStyle = '#666666';
+                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = COLORS.orange;
+                    ctx.beginPath();
+                    ctx.moveTo(px + 8, py + 2);
+                    ctx.lineTo(px + 14, py + 8);
+                    ctx.lineTo(px + 11, py + 14);
+                    ctx.lineTo(px + 8, py + 11);
+                    ctx.lineTo(px + 5, py + 14);
+                    ctx.lineTo(px + 2, py + 8);
+                    ctx.closePath();
+                    ctx.fill();
+                    break;
+                    
+                case BASE_DESTROYED:
+                    ctx.fillStyle = '#333333';
+                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = '#111111';
+                    ctx.fillRect(px + 3, py + 3, 10, 10);
+                    break;
+            }
+        }
+        
+        function drawMap() {
+            for (let y = 0; y < MAP_HEIGHT; y++) {
+                for (let x = 0; x < MAP_WIDTH; x++) {
+                    const tile = gameMap[y][x];
+                    if (tile !== EMPTY && tile !== GRASS) {
+                        drawTile(x, y, tile);
+                    }
+                }
+            }
+        }
+        
+        function drawGrass() {
+            for (let y = 0; y < MAP_HEIGHT; y++) {
+                for (let x = 0; x < MAP_WIDTH; x++) {
+                    if (gameMap[y][x] === GRASS) {
+                        drawTile(x, y, GRASS);
+                    }
+                }
+            }
+        }
+        
+        // ===== ИГРОВАЯ ЛОГИКА =====
+        function spawnEnemy() {
+            if (enemiesRemaining <= 0 || enemiesOnField >= maxEnemiesOnField) return;
+            
+            // Ищем свободную точку спавна
+            let attempts = 0;
+            while (attempts < 3) {
+                const spawn = enemySpawnPoints[currentSpawnPoint];
+                currentSpawnPoint = (currentSpawnPoint + 1) % enemySpawnPoints.length;
+                
+                let blocked = false;
+                
+                for (const enemy of enemies) {
+                    if (Math.abs(enemy.x - spawn.x * TILE_SIZE) < TILE_SIZE * 3 &&
+                        Math.abs(enemy.y - spawn.y * TILE_SIZE) < TILE_SIZE * 3) {
+                        blocked = true;
+                        break;
+                    }
+                }
+                
+                if (player && Math.abs(player.x - spawn.x * TILE_SIZE) < TILE_SIZE * 3 &&
+                    Math.abs(player.y - spawn.y * TILE_SIZE) < TILE_SIZE * 3) {
+                    blocked = true;
+                }
+                
+                if (!blocked) {
+                    // Выбор типа врага
+                    const rand = Math.random();
+                    let type;
+                    if (currentStage < 3) {
+                        type = rand < 0.7 ? 0 : (rand < 0.9 ? 1 : 2);
+                    } else if (currentStage < 6) {
+                        type = rand < 0.5 ? 0 : (rand < 0.7 ? 1 : (rand < 0.9 ? 2 : 3));
+                    } else {
+                        type = rand < 0.3 ? 0 : (rand < 0.5 ? 1 : (rand < 0.75 ? 2 : 3));
+                    }
+                    
+                    const enemy = new Tank(spawn.x, spawn.y, false, type);
+                    enemies.push(enemy);
+                    enemiesOnField++;
+                    enemiesRemaining--;
+                    updateHUD();
+                    return;
+                }
+                
+                attempts++;
+            }
+        }
+        
+        function playerDeath() {
+            player = null;
+            playerLives--;
+            updateHUD();
+            
+            if (playerLives <= 0) {
+                setTimeout(gameOver, 500);
+            } else {
+                setTimeout(() => {
+                    player = new Tank(8, 24, true);
+                    playerInvincible = 180;
+                }, 1500);
+            }
+        }
+        
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('finalStage').textContent = currentStage;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+        }
+        
+        function showVictory() {
+            gameRunning = false;
+            document.getElementById('victoryStage').textContent = currentStage;
+            document.getElementById('victoryScreen').classList.remove('hidden');
+        }
+        
+        function updateHUD() {
+            document.getElementById('lives').textContent = playerLives;
+            document.getElementById('enemies').textContent = enemiesRemaining + enemiesOnField;
+            document.getElementById('stage').textContent = currentStage;
+        }
+        
+        function checkVictory() {
+            if (enemiesRemaining <= 0 && enemies.length === 0 && !baseDestroyed) {
+                setTimeout(showVictory, 1000);
+                return true;
+            }
+            return false;
+        }
+        
+        // ===== ИГРОВОЙ ЦИКЛ =====
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            animationFrame++;
+            
+            if (playerInvincible > 0) playerInvincible--;
+            if (freezeTimer > 0) freezeTimer--;
+            
+            spawnTimer++;
+            if (spawnTimer >= spawnDelay) {
+                spawnTimer = 0;
+                spawnEnemy();
+            }
+            
+            if (player) player.update();
+            
+            for (const enemy of enemies) {
+                enemy.update();
+            }
+            
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].update();
+                if (!bullets[i].active) bullets.splice(i, 1);
+            }
+            
+            for (let i = explosions.length - 1; i >= 0; i--) {
+                explosions[i].update();
+                if (!explosions[i].active) explosions.splice(i, 1);
+            }
+            
+            for (let i = powerUps.length - 1; i >= 0; i--) {
+                powerUps[i].update();
+                if (!powerUps[i].active) powerUps.splice(i, 1);
+            }
+            
+            if (baseDestroyed) {
+                setTimeout(gameOver, 500);
+                gameRunning = false;
+                render();
+                return;
+            }
+            
+            if (checkVictory()) {
+                render();
+                return;
+            }
+            
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function render() {
+            ctx.fillStyle = COLORS.black;
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            
+            drawMap();
+            
+            for (const powerUp of powerUps) powerUp.draw();
+            for (const bullet of bullets) bullet.draw();
+            for (const enemy of enemies) enemy.draw();
+            if (player) player.draw();
+            
+            drawGrass();
+            
+            for (const explosion of explosions) explosion.draw();
+            
+            if (freezeTimer > 0) {
+                ctx.fillStyle = 'rgba(100, 200, 255, 0.15)';
+                ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            }
+        }
+        
+        // ===== УПРАВЛЕНИЕ =====
+        const keys = { up: false, down: false, left: false, right: false, fire: false };
+        
+        function handleInput() {
+            if (!player || !gameRunning) return;
+            
+            player.moving = false;
+            
+            if (keys.up) player.move(0);
+            else if (keys.right) player.move(1);
+            else if (keys.down) player.move(2);
+            else if (keys.left) player.move(3);
+            
+            if (keys.fire && player.canShoot) player.shoot();
+        }
+        
+        document.addEventListener('keydown', (e) => {
+            switch (e.key.toLowerCase()) {
+                case 'arrowup': case 'w': keys.up = true; e.preventDefault(); break;
+                case 'arrowdown': case 's': keys.down = true; e.preventDefault(); break;
+                case 'arrowleft': case 'a': keys.left = true; e.preventDefault(); break;
+                case 'arrowright': case 'd': keys.right = true; e.preventDefault(); break;
+                case ' ': case 'enter': keys.fire = true; e.preventDefault(); break;
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            switch (e.key.toLowerCase()) {
+                case 'arrowup': case 'w': keys.up = false; break;
+                case 'arrowdown': case 's': keys.down = false; break;
+                case 'arrowleft': case 'a': keys.left = false; break;
+                case 'arrowright': case 'd': keys.right = false; break;
+                case ' ': case 'enter': keys.fire = false; break;
+            }
+        });
+        
+        function setupTouchControl(btnId, key) {
+            const btn = document.getElementById(btnId);
+            
+            const start = (e) => { e.preventDefault(); keys[key] = true; };
+            const end = (e) => { e.preventDefault(); keys[key] = false; };
+            
+            btn.addEventListener('touchstart', start, {passive: false});
+            btn.addEventListener('touchend', end, {passive: false});
+            btn.addEventListener('touchcancel', end, {passive: false});
+            btn.addEventListener('mousedown', start);
+            btn.addEventListener('mouseup', end);
+            btn.addEventListener('mouseleave', end);
+        }
+        
+        setupTouchControl('btnUp', 'up');
+        setupTouchControl('btnDown', 'down');
+        setupTouchControl('btnLeft', 'left');
+        setupTouchControl('btnRight', 'right');
+        setupTouchControl('btnFire', 'fire');
+        
+        setInterval(handleInput, 16);
+        
+        // ===== ИНИЦИАЛИЗАЦИЯ =====
+        function showStageBanner(stage, callback) {
+            const banner = document.getElementById('stageBanner');
+            banner.textContent = `STAGE ${stage}`;
+            banner.style.display = 'block';
+            
+            setTimeout(() => {
+                banner.style.display = 'none';
+                if (callback) callback();
+            }, 1500);
+        }
+        
+        function initStage(stage) {
+            generateMap(stage);
+            
+            player = new Tank(8, 24, true);
+            enemies = [];
+            bullets = [];
+            explosions = [];
+            powerUps = [];
+            
+            enemiesRemaining = 12 + stage * 2;
+            enemiesOnField = 0;
+            maxEnemiesOnField = Math.min(3 + Math.floor(stage / 2), 5);
+            spawnTimer = 0;
+            spawnDelay = Math.max(150, 220 - stage * 10);
+            baseDestroyed = false;
+            playerInvincible = 180;
+            freezeTimer = 0;
+            currentSpawnPoint = 0;
+            
+            updateHUD();
+        }
+        
+        function startGame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('victoryScreen').classList.add('hidden');
+            
+            currentStage = 1;
+            playerLives = 3;
+            
+            showStageBanner(currentStage, () => {
+                initStage(currentStage);
+                gameRunning = true;
+                gameLoop();
+            });
+        }
+        
+        function nextStage() {
+            document.getElementById('victoryScreen').classList.add('hidden');
+            
+            currentStage++;
+            
+            showStageBanner(currentStage, () => {
+                initStage(currentStage);
+                gameRunning = true;
+                gameLoop();
+            });
+        }
+        
+        function restartGame() {
+            startGame();
+        }
+    </script>
+</body>
+</html>
